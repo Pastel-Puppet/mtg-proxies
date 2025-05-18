@@ -5,8 +5,8 @@ use std::io::Write;
 use clap::Parser;
 use clio::{Input, OutputPath};
 
-use generate_proxies::generate_proxies::{generate_proxies_html, generate_proxies_html_from_cards};
-use scryfall::{api_interface::api_interface::ApiInterface, deck_formats::deck_formats::{images_from_json_file, parse_txt_file}, fetch_card_list::fetch_card_list::resolve_cards};
+use generate_proxies::{generate_proxies_html, generate_proxies_html_from_cards};
+use scryfall::{api_interface::ApiInterface, deck_formats::{images_from_json_file, parse_txt_file}, fetch_card_list::resolve_cards};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

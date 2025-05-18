@@ -1,34 +1,56 @@
 use std::error::Error;
+use clap::ValueEnum;
 use url::Url;
 
-use scryfall::fetch_card_list::ResolvedCard;
+use scryfall::{api_classes::ImageUris, fetch_card_list::ResolvedCard};
 
-fn extract_images(cards: &Vec<ResolvedCard>) -> Vec<(Url, usize)> {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+pub enum ImageUriType {
+    Small,
+    Normal,
+    Large,
+    ArtCrop,
+    BorderCrop,
+    Png,
+}
+
+fn extract_image(images: &ImageUris, image_type: ImageUriType) -> Url {
+    match image_type {
+        ImageUriType::Small => images.small.clone(),
+        ImageUriType::Normal => images.normal.clone(),
+        ImageUriType::Large => images.large.clone(),
+        ImageUriType::ArtCrop => images.art_crop.clone(),
+        ImageUriType::BorderCrop => images.border_crop.clone(),
+        ImageUriType::Png => images.png.clone(),
+    }
+}
+
+fn extract_images(cards: &Vec<ResolvedCard>, image_type: ImageUriType) -> Vec<(Url, usize)> {
     let mut image_list = Vec::new();
 
     for card in cards {
         if let Some(faces) = &card.card.card_faces {
             for face in faces {
                 if let Some(image_uris) = &face.image_uris {
-                    image_list.push((image_uris.png.clone(), card.count));
+                    image_list.push((extract_image(image_uris, image_type), card.count));
                 }
             }
         } else if let Some(image_uris) = &card.card.image_uris {
-            image_list.push((image_uris.png.clone(), card.count));
+            image_list.push((extract_image(image_uris, image_type), card.count));
         }
     }
 
     image_list
 }
 
-pub fn generate_proxies_html_from_cards(cards: &Vec<ResolvedCard>, extra_cards: &Vec<String>, exclude_basic_lands: bool) -> Result<String, Box<dyn Error>> {
+pub fn generate_proxies_html_from_cards(cards: &Vec<ResolvedCard>, extra_cards: &Vec<String>, exclude_basic_lands: bool, image_type: ImageUriType) -> Result<String, Box<dyn Error>> {
     let filtered_cards = if exclude_basic_lands {
         &cards.iter().filter(|card| !card.card.type_line.starts_with("Basic Land")).cloned().collect()
     } else {
         cards
     };
 
-    generate_proxies_html(&extract_images(filtered_cards), extra_cards)
+    generate_proxies_html(&extract_images(filtered_cards, image_type), extra_cards)
 }
 
 pub fn generate_proxies_html(card_images: &Vec<(Url, usize)>, extra_cards: &Vec<String>) -> Result<String, Box<dyn Error>> {

@@ -36,10 +36,11 @@ fn parse_txt_line(line: String) -> Option<(CollectionCardIdentifier, usize)> {
     }
 }
 
-pub fn parse_txt_file(file: &mut File) -> Result<HashMap<CollectionCardIdentifier, usize>, Box<dyn Error>> {
+pub fn parse_txt_file(file: &File) -> Result<HashMap<CollectionCardIdentifier, usize>, Box<dyn Error>> {
     let mut cards = HashMap::new();
     let mut deck_file = String::new();
-    file.read_to_string(&mut deck_file)?;
+    let mut buffered_reader = BufReader::new(file);
+    buffered_reader.read_to_string(&mut deck_file)?;
 
     for deck_file_line in deck_file.lines() {
         if let Some((card, count)) = parse_txt_line(deck_file_line.to_string()) {

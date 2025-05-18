@@ -1,33 +1,48 @@
-mod scryfall;
+mod generate_proxies;
 
-use std::{fs::{read_to_string, File}, io::Write};
+use std::io::Write;
 
-use scryfall::{api_interface::api_interface::ApiInterface, card_list::card_list::CardList};
+use clap::Parser;
+use clio::{Input, OutputPath};
+
+use generate_proxies::generate_proxies::{generate_proxies_html, generate_proxies_html_from_cards};
+use scryfall::{api_interface::api_interface::ApiInterface, deck_formats::deck_formats::{images_from_json_file, parse_txt_file}, fetch_card_list::fetch_card_list::resolve_cards};
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    #[clap(value_parser)]
+    deck: Input,
+    #[clap(long, short, value_parser, default_value="proxies.html")]
+    output: OutputPath,
+    #[arg(long)]
+    exclude_basic_lands: bool,
+    extra_cards: Vec<String>,
+}
 
 fn main() {
+    let mut args = Args::parse();
+
     let mut interface = ApiInterface::new().expect("Could not initialise HTTP client");
 
-    let mut deck_list = CardList::new();
+    let Some(deck_file_extension) = args.deck.path().extension() else {
+        panic!("Could not find extension of file {}", args.deck.path());
+    };
 
-    let deck_file = read_to_string("/workspaces/mtg_proxies/deck.txt").expect("Oops");
-    for deck_file_line in deck_file.lines() {
-        deck_list.add(deck_file_line.to_string());
-    }
+    let proxies_html = match deck_file_extension.to_string_lossy().to_string().as_str() {
+        "txt" => {
+            let cards = resolve_cards(&mut parse_txt_file(args.deck.get_file().expect("Could not open deck file")).expect("Could not parse deck file"), &mut interface).expect("Could not resolve deck cards");
+            for card in &cards {
+                println!("{} {}", card.count, card.card.name);
+            }
+            generate_proxies_html_from_cards(&cards, &args.extra_cards, args.exclude_basic_lands).expect("Could not generate proxies HTML content")
+        },
+        "json" => {
+            let card_images = images_from_json_file(args.deck.get_file().expect("Could not open deck file"), args.exclude_basic_lands).expect("Could not parse deck file");
+            generate_proxies_html(&card_images, &args.extra_cards).expect("Could not generate proxies HTML content")
+        },
+        _ => panic!("File extension {} is not supported", deck_file_extension.to_string_lossy()),
+    };
 
-    deck_list.resolve_cards(&mut interface).expect("Oops");
-
-    for resolved_card in &deck_list.resolved_cards {
-        println!("{} {}", resolved_card.count, resolved_card.card.name);
-    }
-
-    let mut html = "<!DOCTYPE html><html><style>@media print {@page {size: auto;margin: 5mm 10mm;}}</style><body style=\"margin: 0 0 30px;padding: 0;font-size: 0;\">".to_owned();
-
-    for image_url in &deck_list.extract_images() {
-        html += &format!("<img src={} style=\"margin: 0;page-break-inside: avoid;width: 63mm;height: 88mm;\"/>", image_url);
-    }
-
-    html += "</body></html>";
-
-    let mut html_file = File::create("proxies.html").expect("Oops");
-    html_file.write(html.as_bytes()).expect("Oops");
+    args.output.create().expect("Could not create proxies HTML file").write_all(proxies_html.as_bytes()).expect("Could not write proxies HTML file");
 }

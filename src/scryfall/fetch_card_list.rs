@@ -1,0 +1,136 @@
+pub mod fetch_card_list {
+    use std::{collections::HashMap, error::Error, fmt::Display};
+
+    use crate::{api_classes::api_classes::{ApiObject, Card, CardNotFound}, api_interface::api_interface::ApiInterface, collection_card_identifier::collection_card_identifier::CollectionCardIdentifier};
+
+    #[derive(Debug, Clone)]
+    enum CardParseErrorCause {
+        ObjectNotCard(ApiObject),
+        ObjectNotList(ApiObject),
+        CardCountNotFound(String),
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct CardParseError {
+        cause: CardParseErrorCause,
+    }
+
+    impl Display for CardParseError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match &self.cause {
+                CardParseErrorCause::ObjectNotCard(object) => write!(f, "API returned object other than a card:\n{:?}", object),
+                CardParseErrorCause::ObjectNotList(object) => write!(f, "API returned object other than a list:\n{:?}", object),
+                CardParseErrorCause::CardCountNotFound(identifier) => write!(f, "Card {} could not be found in unresolved list", identifier),
+            }
+        }
+    }
+
+    impl Error for CardParseError {}
+
+    #[derive(Debug, Clone)]
+    pub struct ResolvedCard {
+        pub count: usize,
+        pub card: Card,
+    }
+
+    fn get_count_for_card(card_map: &HashMap<CollectionCardIdentifier, usize>, card: &Card) -> Option<usize> {
+        if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::Id(card.id), false) {
+            return Some(count)
+        };
+        if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::Name(card.name.clone()), true) {
+            return Some(count)
+        };
+        if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::NameSet((card.name.clone(), card.set.clone())), true) {
+            return Some(count)
+        };
+        if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::CollectorNumberSet((card.collector_number.clone(), card.set.clone())), false) {
+            return Some(count)
+        };
+        if let Some(mtgo_id) = &card.mtgo_id {
+            if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::MtgoId(*mtgo_id), false) {
+                return Some(count)
+            };
+        }
+        if let Some(multiverse_ids) = &card.multiverse_ids {
+            for multiverse_id in multiverse_ids {
+                if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::MultiverseId(*multiverse_id), false) {
+                    return Some(count)
+                };
+            }
+        }
+        if let Some(oracle_id) = &card.oracle_id {
+            if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::OracleId(*oracle_id), false) {
+                return Some(count)
+            };
+        }
+        if let Some(illustration_id) = &card.illustration_id {
+            if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::IllustrationId(*illustration_id), false) {
+                return Some(count)
+            };
+        }
+        None
+    }
+
+    fn get_count_for_card_identifier(card_map: &HashMap<CollectionCardIdentifier, usize>, card_identifier: &CollectionCardIdentifier, use_default: bool) -> Option<usize> {
+        match card_map.get(card_identifier) {
+            Some(count) => Some(*count),
+            None => {
+                if use_default {
+                    println!("Could not find card {:?} on the deck list, assuming it has one copy", card_identifier);
+                    Some(1)
+                } else {
+                    None
+                }
+            },
+        }
+    }
+
+    fn fuzzy_resolve(card_map: &mut HashMap<CollectionCardIdentifier, usize>, api_interface: &mut ApiInterface, identifier: &CollectionCardIdentifier) -> Result<ResolvedCard, Box<dyn Error>> {
+        let Some(count) = get_count_for_card_identifier(card_map, identifier, true) else {
+            return Err(Box::new(CardParseError { cause: CardParseErrorCause::CardCountNotFound(format!("{:?}", identifier)) }));
+        };
+
+        let object = api_interface.get_card(identifier)?;
+        if let ApiObject::Card(card) = object {
+            Ok(ResolvedCard { count: count, card: card })
+        } else {
+            Err(Box::new(CardParseError { cause: CardParseErrorCause::ObjectNotCard(object) }))
+        }
+    }
+
+    pub fn resolve_cards(card_map: &mut HashMap<CollectionCardIdentifier, usize>, api_interface: &mut ApiInterface) -> Result<Vec<ResolvedCard>, Box<dyn Error>> {
+        let mut not_found_cards_list: Vec<CardNotFound> = Vec::new();
+        let mut resolved_cards: Vec<ResolvedCard> = Vec::new();
+        let unresolved_cards: Vec<&CollectionCardIdentifier> = card_map.keys().collect();
+
+        for unresolved_cards_chunk in unresolved_cards.chunks(75) {
+            let list = match api_interface.get_cards_from_list(unresolved_cards_chunk)? {
+                ApiObject::List(list) => list,
+                other => return Err(Box::new(CardParseError { cause: CardParseErrorCause::ObjectNotList(other) })),
+            };
+
+            if let Some(not_found_cards) = list.not_found {
+                not_found_cards_list.append(&mut not_found_cards.clone());
+            }
+
+            for object in list.data {
+                match object {
+                    ApiObject::Card(card) => {
+                        let Some(count) = get_count_for_card(card_map, &card) else {
+                            return Err(Box::new(CardParseError { cause: CardParseErrorCause::CardCountNotFound(card.name) }));
+                        };
+
+                        resolved_cards.push(ResolvedCard { count: count, card: card })
+                    },
+                    other => return Err(Box::new(CardParseError { cause: CardParseErrorCause::ObjectNotCard(other) })),
+                }
+            }
+        }
+
+        for not_found_card in not_found_cards_list {
+            fuzzy_resolve(card_map, api_interface, &CollectionCardIdentifier::Name(not_found_card.name))?;
+        }
+
+        Ok(resolved_cards)
+    }
+}

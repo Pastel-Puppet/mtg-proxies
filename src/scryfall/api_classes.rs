@@ -13,6 +13,9 @@ pub mod api_classes {
         Card(Card),
         CardFace(CardFace),
         RelatedCard(RelatedCard),
+        Deck(Deck),
+        DeckEntry(DeckEntry),
+        CardDigest(CardDigest),
     }
 
     #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -252,5 +255,64 @@ pub mod api_classes {
         pub art_crop: Url,
         pub border_crop: Url,
         pub png: Url,
+    }
+
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    #[serde(rename = "deck")]
+    pub struct Deck {
+        pub id: Uuid,
+        pub name: String,
+        pub format: String,
+        pub layout: String,
+        pub uri: Url,
+        pub scryfall_uri: Url,
+        pub description: Option<String>,
+        pub trashed: bool,
+        pub in_compliance: bool,
+        pub sections: HashMap<String, Vec<String>>,
+        pub entries: HashMap<String, Vec<DeckEntry>>,
+    }
+
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    #[serde(rename = "deck_entry")]
+    pub struct DeckEntry {
+        pub id: Uuid,
+        pub deck_id: Uuid,
+        pub section: String,
+        pub cardinality: f32,
+        pub count: usize,
+        pub raw_text: String,
+        pub found: bool,
+        pub printing_specified: bool,
+        pub finish: Option<Finish>,
+        pub card_digest: Option<CardDigest>,
+    }
+
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    #[serde(untagged)]
+    pub enum Finish {
+        NoFinish(bool),
+        Finish(String),
+    }
+
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    #[serde(rename = "card_digest")]
+    pub struct CardDigest {
+        pub id: Uuid,
+        pub oracle_id: Uuid,
+        pub name: String,
+        pub scryfall_uri: Url,
+        pub mana_cost: String,
+        pub type_line: String,
+        pub collector_number: String,
+        pub set: String,
+        pub image_uris: DeckImageUris,
+    }
+
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct DeckImageUris {
+        pub front: Url,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub back: Option<Url>,
     }
 }

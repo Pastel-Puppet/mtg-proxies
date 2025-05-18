@@ -4,7 +4,7 @@ pub mod api_interface {
     use serde_json::{from_str, json};
     use url_macro::url;
 
-    use crate::scryfall::{api_classes::api_classes::ApiObject, collection_card_identifier::collection_card_identifier::CollectionCardIdentifier};
+    use crate::{api_classes::api_classes::ApiObject, collection_card_identifier::collection_card_identifier::CollectionCardIdentifier};
 
     #[derive(Debug, Clone)]
     pub struct InvalidCardIdentifierError;
@@ -107,7 +107,7 @@ pub mod api_interface {
             return Ok(from_str(&response)?)
         }
 
-        pub fn get_cards_from_list(&mut self, identifiers: &[CollectionCardIdentifier]) -> Result<ApiObject, Box<dyn Error>> {
+        pub fn get_cards_from_list(&mut self, identifiers: &[&CollectionCardIdentifier]) -> Result<ApiObject, Box<dyn Error>> {
             let identifiers_json = json!({
                 "identifiers": identifiers
             });

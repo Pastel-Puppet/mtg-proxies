@@ -1,9 +1,9 @@
-use std::{error::Error, fmt::Display, thread::sleep, time::{Duration, Instant}};
+use std::{error::Error as ErrorTrait, fmt::Display, thread::sleep, time::{Duration, Instant}};
 use reqwest::{header::ACCEPT, blocking::Client, Url};
 use serde_json::{from_str, json};
 use url_macro::url;
 
-use crate::{api_classes::ApiObject, collection_card_identifier::CollectionCardIdentifier};
+use crate::{api_classes::{ApiObject, Error}, collection_card_identifier::CollectionCardIdentifier};
 
 #[derive(Debug, Clone)]
 pub struct InvalidCardIdentifierError;
@@ -14,7 +14,20 @@ impl Display for InvalidCardIdentifierError {
     }
 }
 
-impl Error for InvalidCardIdentifierError {}
+impl ErrorTrait for InvalidCardIdentifierError {}
+
+#[derive(Debug, Clone)]
+pub struct ApiError {
+    error: Error,
+}
+
+impl Display for ApiError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Received an error from an API request:\n{:?}", self.error)
+    }
+}
+
+impl ErrorTrait for ApiError {}
 
 static APP_USER_AGENT: &str = concat!(
     env!("CARGO_PKG_NAME"),
@@ -32,10 +45,11 @@ pub struct ApiInterface {
     http_client: Client,
     api_endpoint: Url,
     last_request_time: Option<Instant>,
+    verbose: bool,
 }
 
 impl ApiInterface {
-    pub fn new() -> Result<ApiInterface, Box<dyn Error>> {
+    pub fn new(verbose: bool) -> Result<ApiInterface, Box<dyn ErrorTrait>> {
         let builder = Client::builder()
             .user_agent(APP_USER_AGENT);
 
@@ -43,6 +57,7 @@ impl ApiInterface {
             http_client: builder.build()?,
             api_endpoint: url!("https://api.scryfall.com/"),
             last_request_time: None,
+            verbose
         })
     }
 
@@ -57,8 +72,12 @@ impl ApiInterface {
         }
     }
 
-    pub fn get_card(&mut self, card: &CollectionCardIdentifier) -> Result<ApiObject, Box<dyn Error>> {
+    pub fn get_card(&mut self, card: &CollectionCardIdentifier) -> Result<ApiObject, Box<dyn ErrorTrait>> {
         self.rate_limit();
+
+        if self.verbose {
+            println!("Sending API request for card {:?}", card);
+        }
 
         let response = match card {
             CollectionCardIdentifier::Id(uuid) => {
@@ -103,16 +122,24 @@ impl ApiInterface {
             },
         };
 
-        Ok(from_str(&response)?)
+        let api_object = from_str(&response)?;
+        if let ApiObject::Error(error) = api_object {
+            Err(Box::new(ApiError { error: *error }))
+        } else {
+            Ok(api_object)
+        }
     }
 
-    pub fn get_cards_from_list(&mut self, identifiers: &[&CollectionCardIdentifier]) -> Result<ApiObject, Box<dyn Error>> {
+    pub fn get_cards_from_list(&mut self, identifiers: &[&CollectionCardIdentifier]) -> Result<ApiObject, Box<dyn ErrorTrait>> {
         let identifiers_json = json!({
             "identifiers": identifiers
         });
 
         self.rate_limit();
-        println!("Sending API request");
+
+        if self.verbose {
+            println!("Sending API request for multiple cards");
+        }
 
         let response = self.http_client.post(self.api_endpoint.join(CARD_COLLECTION_METHOD)?)
             .json(&identifiers_json)
@@ -120,8 +147,11 @@ impl ApiInterface {
             .send()?
             .text()?;
 
-        //println!("API response received:\n{}", response);
-
-        Ok(from_str(&response)?)
+        let api_object = from_str(&response)?;
+        if let ApiObject::Error(error) = api_object {
+            Err(Box::new(ApiError { error: *error }))
+        } else {
+            Ok(api_object)
+        }
     }
 }

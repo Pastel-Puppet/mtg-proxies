@@ -57,7 +57,11 @@ pub fn parse_json_file(file: &File) -> Result<HashMap<CollectionCardIdentifier, 
     let buffered_reader = BufReader::new(file);
     let deck: Deck = from_reader(buffered_reader)?;
 
-    for deck_section in deck.entries.values() {
+    for (section_name, deck_section) in deck.entries.iter() {
+        if section_name == "maybeboard" {
+            continue;
+        }
+
         for card in deck_section {
             if let Some(card_digest) = &card.card_digest {
                 card_map.insert(CollectionCardIdentifier::Id(card_digest.id), card.count);

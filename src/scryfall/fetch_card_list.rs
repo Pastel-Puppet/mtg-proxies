@@ -97,10 +97,11 @@ fn fuzzy_resolve(card_map: &mut HashMap<CollectionCardIdentifier, usize>, api_in
     }
 }
 
-pub fn resolve_cards(card_map: &mut HashMap<CollectionCardIdentifier, usize>, api_interface: &mut ApiInterface) -> Result<Vec<ResolvedCard>, Box<dyn Error>> {
+pub fn resolve_cards(card_map: &mut HashMap<CollectionCardIdentifier, usize>, fetch_related_tokens: bool, api_interface: &mut ApiInterface) -> Result<Vec<ResolvedCard>, Box<dyn Error>> {
     let mut not_found_cards_list: Vec<CardNotFound> = Vec::new();
     let mut resolved_cards: Vec<ResolvedCard> = Vec::new();
     let unresolved_cards: Vec<&CollectionCardIdentifier> = card_map.keys().collect();
+    let mut related_tokens: HashMap<CollectionCardIdentifier, usize> = HashMap::new();
 
     for unresolved_cards_chunk in unresolved_cards.chunks(75) {
         let list = match api_interface.get_cards_from_list(unresolved_cards_chunk)? {
@@ -119,7 +120,17 @@ pub fn resolve_cards(card_map: &mut HashMap<CollectionCardIdentifier, usize>, ap
                         return Err(Box::new(CardParseError { cause: CardParseErrorCause::CardCountNotFound(card.name) }));
                     };
 
-                    resolved_cards.push(ResolvedCard { count, card: *card })
+                    if fetch_related_tokens {
+                        if let Some(related_cards) = &card.all_parts {
+                            for related_card in related_cards {
+                                if related_card.component == "token" {
+                                    related_tokens.insert(CollectionCardIdentifier::Id(related_card.id), 1);
+                                }
+                            }
+                        }
+                    }
+
+                    resolved_cards.push(ResolvedCard { count, card: *card });
                 },
                 other => return Err(Box::new(CardParseError { cause: CardParseErrorCause::ObjectNotCard(other) })),
             }
@@ -127,7 +138,13 @@ pub fn resolve_cards(card_map: &mut HashMap<CollectionCardIdentifier, usize>, ap
     }
 
     for not_found_card in not_found_cards_list {
-        fuzzy_resolve(card_map, api_interface, &CollectionCardIdentifier::Name(not_found_card.name))?;
+        let resolved_card = fuzzy_resolve(card_map, api_interface, &CollectionCardIdentifier::Name(not_found_card.name.clone()))?;
+        println!("{} did not match any card, using closest match: {}", not_found_card.name, resolved_card.card.name);
+        resolved_cards.push(resolved_card);
+    }
+
+    if fetch_related_tokens {
+        resolved_cards.append(&mut resolve_cards(&mut related_tokens, false, api_interface)?);
     }
 
     Ok(resolved_cards)

@@ -34,16 +34,22 @@ pub fn extract_images(cards: &Vec<ResolvedCard>, exclude_basic_lands: bool, imag
 
     let mut image_list = Vec::new();
 
-    for card in filtered_cards {
+    'card_list: for card in filtered_cards {
         if let Some(faces) = &card.card.card_faces {
             for face in faces {
                 if let Some(image_uris) = &face.image_uris {
                     image_list.push((extract_image(image_uris, image_type), card.count));
+                    continue 'card_list;
                 }
             }
-        } else if let Some(image_uris) = &card.card.image_uris {
-            image_list.push((extract_image(image_uris, image_type), card.count));
         }
+        
+        if let Some(image_uris) = &card.card.image_uris {
+            image_list.push((extract_image(image_uris, image_type), card.count));
+            continue;
+        }
+
+        println!("Could not find image data for {}", card.card.name);
     }
 
     image_list

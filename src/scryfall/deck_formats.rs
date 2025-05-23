@@ -65,6 +65,11 @@ pub fn parse_json_file(file: &File) -> Result<HashMap<CollectionCardIdentifier, 
         for card in deck_section {
             if let Some(card_digest) = &card.card_digest {
                 card_map.insert(CollectionCardIdentifier::Id(card_digest.id), card.count);
+                continue;
+            }
+
+            if card.found {
+                println!("Could not find ID for card {}", &card.raw_text);
             }
         }
     }
@@ -93,6 +98,11 @@ pub fn images_from_json_file(file: &File, exclude_basic_lands: bool) -> Result<V
                 if let Some(back_image) = card_digest.image_uris.back.clone() {
                     image_list.push((back_image, card.count));
                 }
+                continue;
+            }
+
+            if card.found {
+                println!("Could not find image for card {}", &card.raw_text);
             }
         }
     }

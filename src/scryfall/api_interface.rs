@@ -1,4 +1,4 @@
-use std::{error::Error as ErrorTrait, fmt::Display, thread::sleep, time::{Duration, Instant}};
+use std::{error::Error as ErrorTrait, fmt::Display, fs::File, io::Write, path::PathBuf, thread::sleep, time::{Duration, Instant}};
 use reqwest::{header::ACCEPT, blocking::Client, Url};
 use serde_json::{from_str, json};
 use url_macro::url;
@@ -29,6 +29,20 @@ impl Display for ApiError {
 
 impl ErrorTrait for ApiError {}
 
+#[derive(Debug, Clone)]
+pub struct InvalidApiObjectError {
+    expected: &'static str,
+    received: ApiObject,
+}
+
+impl Display for InvalidApiObjectError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Expected {}, received from the API:\n{:?}", self.expected, self.received)
+    }
+}
+
+impl ErrorTrait for InvalidApiObjectError {}
+
 static APP_USER_AGENT: &str = concat!(
     env!("CARGO_PKG_NAME"),
     "/",
@@ -40,6 +54,7 @@ static SPECIFIED_CARD_METHOD: &str = "/cards";
 static MULTIVERSE_CARD_METHOD: &str = "/cards/multiverse";
 static MTGO_CARD_METHOD: &str = "/cards/mtgo";
 static CARD_COLLECTION_METHOD: &str = "/cards/collection";
+static BULK_DATA_METHOD: &str = "/bulk-data/all-cards";
 
 pub struct ApiInterface {
     http_client: Client,
@@ -153,5 +168,47 @@ impl ApiInterface {
         } else {
             Ok(api_object)
         }
+    }
+
+    fn get_bulk_data_endpoint(&mut self) -> Result<ApiObject, Box<dyn ErrorTrait>> {
+        self.rate_limit();
+
+        if self.verbose {
+            println!("Sending API request for bulk data endpoints");
+        }
+
+        let response = self.http_client.get(self.api_endpoint.join(BULK_DATA_METHOD)?)
+            .header(ACCEPT, "application/json")
+            .send()?
+            .text()?;
+
+        let api_object = from_str(&response)?;
+        if let ApiObject::Error(error) = api_object {
+            Err(Box::new(ApiError { error: *error }))
+        } else {
+            Ok(api_object)
+        }
+    }
+
+    pub fn get_bulk_data(&mut self, output_file: PathBuf) -> Result<(), Box<dyn ErrorTrait>> {
+        let received_object = self.get_bulk_data_endpoint()?;
+        let ApiObject::BulkData(bulk_data_endpoint) = received_object else {
+            return Err(Box::new(InvalidApiObjectError { expected: "BulkData",  received: received_object }));
+        };
+
+        if self.verbose {
+            println!("Sending API request for bulk data");
+        }
+
+        let mut output_file = File::create(output_file)?;
+        let response = self.http_client.get(bulk_data_endpoint.download_uri)
+            .header(ACCEPT, "application/json")
+            .timeout(Duration::from_secs(300))
+            .send()?
+            .bytes()?;
+
+        output_file.write_all(&response)?;
+
+        Ok(())
     }
 }

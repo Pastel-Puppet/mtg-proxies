@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 use url::Url;
 use uuid::Uuid;
 
@@ -15,6 +16,7 @@ pub enum ApiObject {
     Deck(Box<Deck>),
     DeckEntry(Box<DeckEntry>),
     CardDigest(Box<CardDigest>),
+    BulkData(Box<BulkData>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -313,4 +315,21 @@ pub struct DeckImageUris {
     pub front: Url,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub back: Option<Url>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename = "bulk_data")]
+pub struct BulkData {
+    pub id: Uuid,
+    #[serde(rename = "type")]
+    pub bulk_type: String,
+    #[serde(with = "time::serde::iso8601")]
+    pub updated_at: OffsetDateTime,
+    pub uri: Url,
+    pub name: String,
+    pub description: String,
+    pub size: usize,
+    pub download_uri: Url,
+    pub content_type: String,
+    pub content_encoding: String,
 }

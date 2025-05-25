@@ -26,10 +26,16 @@ impl Display for CardParseError {
 
 impl Error for CardParseError {}
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ResolvedCard {
     pub count: usize,
     pub card: Card,
+}
+
+impl Display for ResolvedCard {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.count, self.card.name)
+    }
 }
 
 fn get_count_for_card(card_map: &HashMap<CollectionCardIdentifier, usize>, card: &Card) -> Option<usize> {

@@ -25,9 +25,9 @@ fn extract_image(images: &ImageUris, image_type: ImageUriType) -> Url {
     }
 }
 
-pub fn extract_images(cards: &Vec<ResolvedCard>, exclude_basic_lands: bool, image_type: ImageUriType) -> Vec<(Url, usize)> {
+pub fn extract_images(cards: &Vec<&ResolvedCard>, exclude_basic_lands: bool, image_type: ImageUriType) -> Vec<(Url, usize)> {
     let filtered_cards = if exclude_basic_lands {
-        &cards.iter().filter(|card| !card.card.type_line.starts_with("Basic Land")).cloned().collect()
+        &cards.iter().filter(|card| card.card.type_line.as_ref().is_none_or(|type_line| !type_line.starts_with("Basic Land"))).cloned().collect()
     } else {
         cards
     };

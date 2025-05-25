@@ -1,13 +1,12 @@
 mod generate_proxies;
 
-use std::{fs::File, io::Write};
-use url::Url;
+use std::{collections::HashSet, hash::RandomState, io::Write};
 
 use clap::Parser;
 use clio::{Input, OutputPath};
 
 use generate_proxies::{extract_images, generate_proxies_html, ImageUriType};
-use scryfall::{api_interface::ApiInterface, deck_formats::{images_from_json_file, parse_json_file, parse_txt_file}, fetch_card_list::resolve_cards};
+use scryfall::{api_interface::ApiInterface, deck_formats::{parse_json_file, parse_txt_file}, fetch_card_list::{resolve_cards, ResolvedCard}};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -25,30 +24,29 @@ struct Args {
     #[arg(short, long)]
     verbose: bool,
     extra_cards: Vec<String>,
+    #[clap(short, long, value_parser)]
+    old_deck: Option<Input>,
 }
 
-fn get_card_images_from_file(deck_file: &File, deck_file_extension: &str, interface: &mut ApiInterface, exclude_basic_lands: bool, image_type: Option<ImageUriType>, include_tokens: bool) -> Vec<(Url, usize)> {
-    let mut unresolved_cards = match deck_file_extension {
+fn get_cards_from_file(deck_file: &mut Input, interface: &mut ApiInterface, include_tokens: bool) -> Vec<ResolvedCard> {
+    let deck_file_extension = match deck_file.path().extension() {
+        Some(extension) => extension.to_string_lossy().into_owned(),
+        None => panic!("Could not find extension of file {}", deck_file.path()),
+    };
+
+    let deck_file = deck_file.get_file().expect("Could not open deck file");
+
+    let mut unresolved_cards = match deck_file_extension.as_str() {
         "txt" => {
             parse_txt_file(deck_file).expect("Could not parse deck file")
         },
         "json" => {
-            if let None = image_type {
-                return images_from_json_file(deck_file, exclude_basic_lands).expect("Could not parse deck file");
-            }
-
             parse_json_file(deck_file).expect("Could not parse deck file")
         },
         _ => panic!("File extension {} is not supported", deck_file_extension),
     };
 
-    let cards = resolve_cards(&mut unresolved_cards, include_tokens, interface).expect("Could not resolve deck cards");
-
-    for card in &cards {
-        println!("{} {}", card.count, card.card.name);
-    }
-
-    extract_images(&cards, exclude_basic_lands, image_type.unwrap_or(ImageUriType::Large))
+    resolve_cards(&mut unresolved_cards, include_tokens, interface).expect("Could not resolve deck cards")
 }
 
 fn main() {
@@ -56,14 +54,31 @@ fn main() {
 
     let mut interface = ApiInterface::new(args.verbose).expect("Could not initialise HTTP client");
 
-    let deck_file_extension = match args.deck.path().extension() {
-        Some(extension) => extension.to_string_lossy().into_owned(),
-        None => panic!("Could not find extension of file {}", args.deck.path()),
+    let cards = get_cards_from_file(&mut args.deck, &mut interface, args.include_tokens);
+
+    let card_images = if let Some(mut old_deck) = args.old_deck {
+        let cards_set: HashSet<ResolvedCard, RandomState> = HashSet::from_iter(cards);
+
+        let old_cards = get_cards_from_file(&mut old_deck, &mut interface, args.include_tokens);
+        let old_cards_set: HashSet<ResolvedCard, RandomState> = HashSet::from_iter(old_cards);
+
+        let added_cards = cards_set.difference(&old_cards_set);
+        let removed_cards = old_cards_set.difference(&cards_set);
+
+        println!("Added:{}\n", added_cards.clone().fold("".to_owned(), |acc, card| format!("{}\n{}", acc, card)));
+        println!("Removed:{}\n", removed_cards.fold("".to_owned(), |acc, card| format!("{}\n{}", acc, card)));
+
+        let added_cards_vec = Vec::from_iter(added_cards);
+
+        extract_images(&added_cards_vec, args.exclude_basic_lands, args.image_type.unwrap_or(ImageUriType::Large))
+    } else {
+        for card in &cards {
+            println!("{}", card);
+        }
+
+        extract_images(&Vec::from_iter(cards.iter()), args.exclude_basic_lands, args.image_type.unwrap_or(ImageUriType::Large))
     };
 
-    let deck_file = args.deck.get_file().expect("Could not open deck file");
-
-    let card_images = get_card_images_from_file(&deck_file, &deck_file_extension, &mut interface, args.exclude_basic_lands, args.image_type, args.include_tokens);
     let proxies_html = generate_proxies_html(&card_images, &args.extra_cards).expect("Could not generate proxies HTML content");
 
     args.output.create().expect("Could not create proxies HTML file").write_all(proxies_html.as_bytes()).expect("Could not write proxies HTML file");

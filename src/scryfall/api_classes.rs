@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::Hash};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use url::Url;
@@ -85,7 +85,8 @@ pub struct Card {
     pub all_parts: Option<Vec<RelatedCard>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub card_faces: Option<Vec<CardFace>>,
-    pub cmc: f32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cmc: Option<f32>,
     pub color_identity: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub color_indicator: Option<Vec<String>>,
@@ -119,7 +120,8 @@ pub struct Card {
     pub reserved: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub toughness: Option<String>,
-    pub type_line: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub type_line: Option<String>,
 
     // Print fields.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -190,6 +192,20 @@ pub struct Card {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preview: Option<HashMap<String, String>>,
 }
+
+impl Hash for Card {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
+impl PartialEq for Card {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Eq for Card {}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename = "card_face")]

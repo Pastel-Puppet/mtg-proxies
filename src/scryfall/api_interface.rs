@@ -3,7 +3,7 @@ use reqwest::{header::ACCEPT, blocking::Client, Url};
 use serde_json::{from_str, json};
 use url_macro::url;
 
-use crate::{api_classes::{ApiObject, Error}, collection_card_identifier::CollectionCardIdentifier};
+use crate::{api_classes::{ApiObject, Card, Error}, collection_card_identifier::CollectionCardIdentifier};
 
 #[derive(Debug, Clone)]
 pub struct InvalidCardIdentifierError;
@@ -168,6 +168,63 @@ impl ApiInterface {
         } else {
             Ok(api_object)
         }
+    }
+
+    fn resolve_multi_page_search(&mut self, search_url: Url) -> Result<Vec<ApiObject>, Box<dyn ErrorTrait>> {
+        self.rate_limit();
+
+        if self.verbose {
+            println!("Sending API request for next page of results");
+        }
+
+        let response = self.http_client.get(search_url)
+            .header(ACCEPT, "application/json")
+            .send()?
+            .text()?;
+
+        let api_object = from_str(&response)?;
+        if let ApiObject::Error(error) = api_object {
+            return Err(Box::new(ApiError { error: *error }));
+        }
+        
+        let ApiObject::List(mut current_page) = api_object else {
+            return Err(Box::new(InvalidApiObjectError { expected: "List", received: api_object }));
+        };
+        
+        let Some(has_more) = current_page.has_more else {
+            return Ok(current_page.data);
+        };
+
+        if !has_more {
+            return Ok(current_page.data);
+        }
+
+        let Some(next_page_url) = current_page.next_page else {
+            println!("Current page claims to have more data but fetch URL is absent");
+            return Ok(current_page.data);
+        };
+
+        current_page.data.append(&mut self.resolve_multi_page_search(next_page_url)?);
+        Ok(current_page.data)
+    }
+
+    pub fn get_all_printings(&mut self, card: Card) -> Result<Vec<Card>, Box<dyn ErrorTrait>> {
+        if self.verbose {
+            println!("Sending API request for all printings of {}", card.name);
+        }
+
+        let search_results = self.resolve_multi_page_search(card.prints_search_uri)?;
+
+        let mut card_printings = Vec::new();
+        for api_object in search_results {
+            let ApiObject::Card(card_printing) = api_object else {
+                return Err(Box::new(InvalidApiObjectError { expected: "Card", received: api_object }))
+            };
+
+            card_printings.push(*card_printing);
+        }
+
+        Ok(card_printings)
     }
 
     fn get_bulk_data_endpoint(&mut self) -> Result<ApiObject, Box<dyn ErrorTrait>> {

@@ -1,9 +1,18 @@
-use std::{error::Error as ErrorTrait, fmt::Display, fs::File, io::Write, path::PathBuf, thread::sleep, time::{Duration, Instant}};
-use reqwest::{header::ACCEPT, blocking::Client, Url};
-use serde_json::{from_str, json};
+use std::{error::Error as ErrorTrait, fmt::Display, thread::sleep, time::{Duration, Instant}};
+use serde_json::{from_str, json, Value};
+use url::Url;
 use url_macro::url;
 
 use crate::{api_classes::{ApiObject, Card, Error}, collection_card_identifier::CollectionCardIdentifier};
+
+pub trait RequestClient {
+    fn build() -> Result<Self, Box<dyn ErrorTrait>>
+        where Self: Sized;
+
+    fn get(&self, url: Url) -> Result<String, Box<dyn ErrorTrait>>;
+    fn get_with_parameters(&self, url: Url, query_parameters: &[(&str, &str)]) -> Result<String, Box<dyn ErrorTrait>>;
+    fn post(&self, url: Url, payload: &Value) -> Result<String, Box<dyn ErrorTrait>>;
+}
 
 #[derive(Debug, Clone)]
 pub struct InvalidCardIdentifierError;
@@ -43,12 +52,6 @@ impl Display for InvalidApiObjectError {
 
 impl ErrorTrait for InvalidApiObjectError {}
 
-static APP_USER_AGENT: &str = concat!(
-    env!("CARGO_PKG_NAME"),
-    "/",
-    env!("CARGO_PKG_VERSION"),
-);
-
 static NAMED_CARD_METHOD: &str = "/cards/named";
 static SPECIFIED_CARD_METHOD: &str = "/cards";
 static MULTIVERSE_CARD_METHOD: &str = "/cards/multiverse";
@@ -56,23 +59,22 @@ static MTGO_CARD_METHOD: &str = "/cards/mtgo";
 static CARD_COLLECTION_METHOD: &str = "/cards/collection";
 static BULK_DATA_METHOD: &str = "/bulk-data/all-cards";
 
-pub struct ApiInterface {
+pub struct ApiInterface<Client>
+    where Client: RequestClient {
     http_client: Client,
     api_endpoint: Url,
     last_request_time: Option<Instant>,
     verbose: bool,
 }
 
-impl ApiInterface {
-    pub fn new(verbose: bool) -> Result<ApiInterface, Box<dyn ErrorTrait>> {
-        let builder = Client::builder()
-            .user_agent(APP_USER_AGENT);
-
-        Ok(ApiInterface {
-            http_client: builder.build()?,
+impl<Client> ApiInterface<Client>
+    where Client: RequestClient {
+    pub fn new(verbose: bool) -> Result<Self, Box<dyn ErrorTrait>> {
+        Ok(Self {
+            http_client: Client::build()?,
             api_endpoint: url!("https://api.scryfall.com/"),
             last_request_time: None,
-            verbose
+            verbose,
         })
     }
 
@@ -96,44 +98,24 @@ impl ApiInterface {
 
         let response = match card {
             CollectionCardIdentifier::Id(uuid) => {
-                self.http_client.get(self.api_endpoint.join(format!("{}/{}", SPECIFIED_CARD_METHOD, uuid).as_str())?)
-                    .header(ACCEPT, "application/json")
-                    .send()?
-                    .text()?
+                self.http_client.get(self.api_endpoint.join(format!("{}/{}", SPECIFIED_CARD_METHOD, uuid).as_str())?)?
             },
             CollectionCardIdentifier::MtgoId(id) => {
-                self.http_client.get(self.api_endpoint.join(format!("{}/{}", MTGO_CARD_METHOD, id).as_str())?)
-                    .header(ACCEPT, "application/json")
-                    .send()?
-                    .text()?
+                self.http_client.get(self.api_endpoint.join(format!("{}/{}", MTGO_CARD_METHOD, id).as_str())?)?
             },
             CollectionCardIdentifier::MultiverseId(id) => {
-                self.http_client.get(self.api_endpoint.join(format!("{}/{}", MULTIVERSE_CARD_METHOD, id).as_str())?)
-                    .header(ACCEPT, "application/json")
-                    .send()?
-                    .text()?
+                self.http_client.get(self.api_endpoint.join(format!("{}/{}", MULTIVERSE_CARD_METHOD, id).as_str())?)?
             },
             CollectionCardIdentifier::OracleId(_) |
             CollectionCardIdentifier::IllustrationId(_) => return Err(Box::new(InvalidCardIdentifierError)),
             CollectionCardIdentifier::Name(name) => {
-                self.http_client.get(self.api_endpoint.join(NAMED_CARD_METHOD)?)
-                    .query(&[("fuzzy", name)])
-                    .header(ACCEPT, "application/json")
-                    .send()?
-                    .text()?
+                self.http_client.get_with_parameters(self.api_endpoint.join(NAMED_CARD_METHOD)?, &[("fuzzy", name)])?
             },
             CollectionCardIdentifier::NameSet((name, set)) => {
-                self.http_client.get(self.api_endpoint.join(NAMED_CARD_METHOD)?)
-                    .query(&[("fuzzy", name), ("set", set)])
-                    .header(ACCEPT, "application/json")
-                    .send()?
-                    .text()?
+                self.http_client.get_with_parameters(self.api_endpoint.join(NAMED_CARD_METHOD)?, &[("fuzzy", name), ("set", set)])?
             },
             CollectionCardIdentifier::CollectorNumberSet((collector_number, set)) => {
-                self.http_client.get(self.api_endpoint.join(format!("{}/{}/{}", SPECIFIED_CARD_METHOD, set, collector_number).as_str())?)
-                    .header(ACCEPT, "application/json")
-                    .send()?
-                    .text()?
+                self.http_client.get(self.api_endpoint.join(format!("{}/{}/{}", SPECIFIED_CARD_METHOD, set, collector_number).as_str())?)?
             },
         };
 
@@ -156,11 +138,7 @@ impl ApiInterface {
             println!("Sending API request for multiple cards");
         }
 
-        let response = self.http_client.post(self.api_endpoint.join(CARD_COLLECTION_METHOD)?)
-            .json(&identifiers_json)
-            .header(ACCEPT, "application/json")
-            .send()?
-            .text()?;
+        let response = self.http_client.post(self.api_endpoint.join(CARD_COLLECTION_METHOD)?, &identifiers_json)?;
 
         let api_object = from_str(&response)?;
         if let ApiObject::Error(error) = api_object {
@@ -177,10 +155,7 @@ impl ApiInterface {
             println!("Sending API request for next page of results");
         }
 
-        let response = self.http_client.get(search_url)
-            .header(ACCEPT, "application/json")
-            .send()?
-            .text()?;
+        let response = self.http_client.get(search_url)?;
 
         let api_object = from_str(&response)?;
         if let ApiObject::Error(error) = api_object {
@@ -234,10 +209,7 @@ impl ApiInterface {
             println!("Sending API request for bulk data endpoints");
         }
 
-        let response = self.http_client.get(self.api_endpoint.join(BULK_DATA_METHOD)?)
-            .header(ACCEPT, "application/json")
-            .send()?
-            .text()?;
+        let response = self.http_client.get(self.api_endpoint.join(BULK_DATA_METHOD)?)?;
 
         let api_object = from_str(&response)?;
         if let ApiObject::Error(error) = api_object {
@@ -247,7 +219,7 @@ impl ApiInterface {
         }
     }
 
-    pub fn get_bulk_data(&mut self, output_file: PathBuf) -> Result<(), Box<dyn ErrorTrait>> {
+    pub fn get_bulk_data(&mut self) -> Result<String, Box<dyn ErrorTrait>> {
         let received_object = self.get_bulk_data_endpoint()?;
         let ApiObject::BulkData(bulk_data_endpoint) = received_object else {
             return Err(Box::new(InvalidApiObjectError { expected: "BulkData",  received: received_object }));
@@ -256,16 +228,8 @@ impl ApiInterface {
         if self.verbose {
             println!("Sending API request for bulk data");
         }
+        let response = self.http_client.get(bulk_data_endpoint.download_uri)?;
 
-        let mut output_file = File::create(output_file)?;
-        let response = self.http_client.get(bulk_data_endpoint.download_uri)
-            .header(ACCEPT, "application/json")
-            .timeout(Duration::from_secs(300))
-            .send()?
-            .bytes()?;
-
-        output_file.write_all(&response)?;
-
-        Ok(())
+        Ok(response)
     }
 }

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, error::Error, fmt::Display};
 
-use crate::{api_classes::{ApiObject, Card, CardNotFound}, api_interface::ApiInterface, collection_card_identifier::CollectionCardIdentifier};
+use crate::{api_classes::{ApiObject, Card, CardNotFound}, api_interface::{ApiInterface, RequestClient}, collection_card_identifier::CollectionCardIdentifier};
 
 #[derive(Debug, Clone)]
 enum CardParseErrorCause {
@@ -90,7 +90,7 @@ fn get_count_for_card_identifier(card_map: &HashMap<CollectionCardIdentifier, us
     }
 }
 
-fn fuzzy_resolve(card_map: &mut HashMap<CollectionCardIdentifier, usize>, api_interface: &mut ApiInterface, identifier: &CollectionCardIdentifier) -> Result<ResolvedCard, Box<dyn Error>> {
+fn fuzzy_resolve<Client: RequestClient>(card_map: &mut HashMap<CollectionCardIdentifier, usize>, api_interface: &mut ApiInterface<Client>, identifier: &CollectionCardIdentifier) -> Result<ResolvedCard, Box<dyn Error>> {
     let Some(count) = get_count_for_card_identifier(card_map, identifier, true) else {
         return Err(Box::new(CardParseError { cause: CardParseErrorCause::CardCountNotFound(format!("{:?}", identifier)) }));
     };
@@ -103,7 +103,7 @@ fn fuzzy_resolve(card_map: &mut HashMap<CollectionCardIdentifier, usize>, api_in
     }
 }
 
-pub fn resolve_cards(card_map: &mut HashMap<CollectionCardIdentifier, usize>, fetch_related_tokens: bool, api_interface: &mut ApiInterface) -> Result<Vec<ResolvedCard>, Box<dyn Error>> {
+pub fn resolve_cards<Client: RequestClient>(card_map: &mut HashMap<CollectionCardIdentifier, usize>, fetch_related_tokens: bool, api_interface: &mut ApiInterface<Client>) -> Result<Vec<ResolvedCard>, Box<dyn Error>> {
     let mut not_found_cards_list: Vec<CardNotFound> = Vec::new();
     let mut resolved_cards: Vec<ResolvedCard> = Vec::new();
     let unresolved_cards: Vec<&CollectionCardIdentifier> = card_map.keys().collect();

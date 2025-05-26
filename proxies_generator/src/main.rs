@@ -4,7 +4,7 @@ use clap::{Parser, ValueEnum};
 use clio::{Input, OutputPath};
 use url::Url;
 
-use scryfall::{api_interface::ApiInterface, card_images_helper::{extract_images, ImageUriType}, deck_formats::{parse_json_file, parse_txt_file}, fetch_card_list::{resolve_cards, ResolvedCard}};
+use scryfall::{api_interface::ApiInterface, card_images_helper::{extract_images, ImageUriType}, deck_formats::{parse_json_file, parse_txt_file}, fetch_card_list::{resolve_cards, ResolvedCard}, reqwest_wrapper::ReqwestWrapper};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum ImageType {
@@ -67,7 +67,7 @@ fn generate_proxies_html(card_images: &Vec<(Url, usize)>, extra_cards: &Vec<Stri
     Ok(html)
 }
 
-fn get_cards_from_file(deck_file: &mut Input, interface: &mut ApiInterface, include_tokens: bool) -> Vec<ResolvedCard> {
+fn get_cards_from_file(deck_file: &mut Input, interface: &mut ApiInterface<ReqwestWrapper>, include_tokens: bool) -> Vec<ResolvedCard> {
     let deck_file_extension = match deck_file.path().extension() {
         Some(extension) => extension.to_string_lossy().into_owned(),
         None => panic!("Could not find extension of file {}", deck_file.path()),
@@ -91,7 +91,7 @@ fn get_cards_from_file(deck_file: &mut Input, interface: &mut ApiInterface, incl
 fn main() {
     let mut args = Args::parse();
 
-    let mut interface = ApiInterface::new(args.verbose).expect("Could not initialise HTTP client");
+    let mut interface = ApiInterface::<ReqwestWrapper>::new(args.verbose).expect("Could not initialise HTTP client");
 
     let cards = get_cards_from_file(&mut args.deck, &mut interface, args.include_tokens);
 

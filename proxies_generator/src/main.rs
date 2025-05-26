@@ -1,12 +1,33 @@
-mod generate_proxies;
+use std::{collections::HashSet, error::Error, hash::RandomState, io::Write};
 
-use std::{collections::HashSet, hash::RandomState, io::Write};
-
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use clio::{Input, OutputPath};
+use url::Url;
 
-use generate_proxies::{extract_images, generate_proxies_html, ImageUriType};
-use scryfall::{api_interface::ApiInterface, deck_formats::{parse_json_file, parse_txt_file}, fetch_card_list::{resolve_cards, ResolvedCard}};
+use scryfall::{api_interface::ApiInterface, card_images_helper::{extract_images, ImageUriType}, deck_formats::{parse_json_file, parse_txt_file}, fetch_card_list::{resolve_cards, ResolvedCard}};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+pub enum ImageType {
+    Small,
+    Normal,
+    Large,
+    ArtCrop,
+    BorderCrop,
+    Png,
+}
+
+impl From<ImageType> for ImageUriType {
+    fn from(value: ImageType) -> Self {
+        match value {
+            ImageType::Small => ImageUriType::Small,
+            ImageType::Normal => ImageUriType::Normal,
+            ImageType::Large => ImageUriType::Large,
+            ImageType::ArtCrop => ImageUriType::ArtCrop,
+            ImageType::BorderCrop => ImageUriType::BorderCrop,
+            ImageType::Png => ImageUriType::Png,
+        }
+    }
+}
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -18,7 +39,7 @@ struct Args {
     #[arg(short, long)]
     exclude_basic_lands: bool,
     #[arg(long, short, value_enum)]
-    image_type: Option<ImageUriType>,
+    image_type: Option<ImageType>,
     #[arg(short, long)]
     include_tokens: bool,
     #[arg(short, long)]
@@ -26,6 +47,24 @@ struct Args {
     extra_cards: Vec<String>,
     #[clap(short, long, value_parser)]
     old_deck: Option<Input>,
+}
+
+fn generate_proxies_html(card_images: &Vec<(Url, usize)>, extra_cards: &Vec<String>) -> Result<String, Box<dyn Error>> {
+    let mut html = "<!DOCTYPE html><html><style>@page {size: auto;margin: 5mm 10mm;}.card{margin: 0;page-break-inside: avoid;width: 63mm;height: 88mm;}</style><body style=\"margin: 0 0 30px;padding: 0;font-size: 0;\">".to_owned();
+
+    for extra_card in extra_cards {
+        html += &format!("<img src=\"{}\" class=\"card\"/>", extra_card);
+    }
+
+    for (image_url, count) in card_images {
+        for _ in 0..*count {
+            html += &format!("<img src={} class=\"card\"/>", image_url);
+        }
+    }
+
+    html += "</body></html>";
+
+    Ok(html)
 }
 
 fn get_cards_from_file(deck_file: &mut Input, interface: &mut ApiInterface, include_tokens: bool) -> Vec<ResolvedCard> {
@@ -70,13 +109,13 @@ fn main() {
 
         let added_cards_vec = Vec::from_iter(added_cards);
 
-        extract_images(&added_cards_vec, args.exclude_basic_lands, args.image_type.unwrap_or(ImageUriType::Large))
+        extract_images(&added_cards_vec, args.exclude_basic_lands, args.image_type.unwrap_or(ImageType::Large).into())
     } else {
         for card in &cards {
             println!("{}", card);
         }
 
-        extract_images(&Vec::from_iter(cards.iter()), args.exclude_basic_lands, args.image_type.unwrap_or(ImageUriType::Large))
+        extract_images(&Vec::from_iter(cards.iter()), args.exclude_basic_lands, args.image_type.unwrap_or(ImageType::Large).into())
     };
 
     let proxies_html = generate_proxies_html(&card_images, &args.extra_cards).expect("Could not generate proxies HTML content");

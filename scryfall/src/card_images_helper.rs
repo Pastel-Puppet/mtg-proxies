@@ -1,10 +1,8 @@
-use std::error::Error;
-use clap::ValueEnum;
 use url::Url;
 
-use scryfall::{api_classes::ImageUris, fetch_card_list::ResolvedCard};
+use crate::{api_classes::ImageUris, fetch_card_list::ResolvedCard};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImageUriType {
     Small,
     Normal,
@@ -57,22 +55,4 @@ pub fn extract_images(cards: &Vec<&ResolvedCard>, exclude_basic_lands: bool, ima
     }
 
     image_list
-}
-
-pub fn generate_proxies_html(card_images: &Vec<(Url, usize)>, extra_cards: &Vec<String>) -> Result<String, Box<dyn Error>> {
-    let mut html = "<!DOCTYPE html><html><style>@page {size: auto;margin: 5mm 10mm;}.card{margin: 0;page-break-inside: avoid;width: 63mm;height: 88mm;}</style><body style=\"margin: 0 0 30px;padding: 0;font-size: 0;\">".to_owned();
-
-    for extra_card in extra_cards {
-        html += &format!("<img src=\"{}\" class=\"card\"/>", extra_card);
-    }
-
-    for (image_url, count) in card_images {
-        for _ in 0..*count {
-            html += &format!("<img src={} class=\"card\"/>", image_url);
-        }
-    }
-
-    html += "</body></html>";
-
-    Ok(html)
 }

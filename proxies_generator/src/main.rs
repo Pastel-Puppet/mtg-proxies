@@ -13,7 +13,7 @@ use scryfall::{api_interface::ApiInterface, deck_formats::{parse_json_file, pars
 struct Args {
     #[clap(value_parser)]
     deck: Input,
-    #[clap(long, short, value_parser, default_value="proxies.html")]
+    #[clap(value_parser, default_value="proxies.html")]
     output: OutputPath,
     #[arg(short, long)]
     exclude_basic_lands: bool,

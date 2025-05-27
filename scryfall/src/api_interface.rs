@@ -11,9 +11,9 @@ pub trait RequestClient {
     fn build() -> Result<Self, Box<dyn ErrorTrait>>
         where Self: Sized;
 
-    fn get(&self, url: Url) -> impl std::future::Future<Output = Result<String, Box<dyn ErrorTrait>>> + Send;
-    fn get_with_parameters(&self, url: Url, query_parameters: &[(&str, &str)]) -> impl std::future::Future<Output = Result<String, Box<dyn ErrorTrait>>> + Send;
-    fn post(&self, url: Url, payload: &Value) -> impl std::future::Future<Output = Result<String, Box<dyn ErrorTrait>>> + Send;
+    fn get(&self, url: Url) -> impl std::future::Future<Output = Result<String, Box<dyn ErrorTrait>>>;
+    fn get_with_parameters(&self, url: Url, query_parameters: &[(&str, &str)]) -> impl std::future::Future<Output = Result<String, Box<dyn ErrorTrait>>>;
+    fn post(&self, url: Url, payload: &Value) -> impl std::future::Future<Output = Result<String, Box<dyn ErrorTrait>>>;
 }
 
 #[derive(Debug, Clone)]

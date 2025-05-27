@@ -17,8 +17,11 @@ pub struct ReqwestWrapper {
 
 impl RequestClient for ReqwestWrapper {
     fn build() -> Result<ReqwestWrapper, Box<(dyn Error)>> {
-        let builder = Client::builder()
-            .user_agent(APP_USER_AGENT);
+        let mut builder = Client::builder();
+
+        if cfg!(not(target_family = "wasm")) {
+            builder = builder.user_agent(APP_USER_AGENT);
+        }
 
         Ok(Self {
             client: builder.build()?,

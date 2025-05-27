@@ -67,7 +67,7 @@ fn generate_proxies_html(card_images: &Vec<(Url, usize)>, extra_cards: &Vec<Stri
     Ok(html)
 }
 
-fn get_cards_from_file(deck_file: &mut Input, interface: &mut ApiInterface<ReqwestWrapper>, include_tokens: bool) -> Vec<ResolvedCard> {
+async fn get_cards_from_file(deck_file: &mut Input, interface: &mut ApiInterface<ReqwestWrapper>, include_tokens: bool) -> Vec<ResolvedCard> {
     let deck_file_extension = match deck_file.path().extension() {
         Some(extension) => extension.to_string_lossy().into_owned(),
         None => panic!("Could not find extension of file {}", deck_file.path()),
@@ -85,20 +85,21 @@ fn get_cards_from_file(deck_file: &mut Input, interface: &mut ApiInterface<Reqwe
         _ => panic!("File extension {} is not supported", deck_file_extension),
     };
 
-    resolve_cards(&mut unresolved_cards, include_tokens, interface).expect("Could not resolve deck cards")
+    resolve_cards(&mut unresolved_cards, include_tokens, interface).await.expect("Could not resolve deck cards")
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let mut args = Args::parse();
 
     let mut interface = ApiInterface::<ReqwestWrapper>::new(args.verbose).expect("Could not initialise HTTP client");
 
-    let cards = get_cards_from_file(&mut args.deck, &mut interface, args.include_tokens);
+    let cards = get_cards_from_file(&mut args.deck, &mut interface, args.include_tokens).await;
 
     let card_images = if let Some(mut old_deck) = args.old_deck {
         let cards_set: HashSet<ResolvedCard, RandomState> = HashSet::from_iter(cards);
 
-        let old_cards = get_cards_from_file(&mut old_deck, &mut interface, args.include_tokens);
+        let old_cards = get_cards_from_file(&mut old_deck, &mut interface, args.include_tokens).await;
         let old_cards_set: HashSet<ResolvedCard, RandomState> = HashSet::from_iter(old_cards);
 
         let added_cards = cards_set.difference(&old_cards_set);

@@ -1,4 +1,6 @@
-use std::{error::Error as ErrorTrait, fmt::Display, thread::sleep, time::{Duration, Instant}};
+use std::{error::Error as ErrorTrait, fmt::Display};
+use governor::{DefaultDirectRateLimiter, Quota, RateLimiter};
+use nonzero_ext::nonzero;
 use serde_json::{from_str, json, Value};
 use url::Url;
 use url_macro::url;
@@ -9,9 +11,9 @@ pub trait RequestClient {
     fn build() -> Result<Self, Box<dyn ErrorTrait>>
         where Self: Sized;
 
-    fn get(&self, url: Url) -> Result<String, Box<dyn ErrorTrait>>;
-    fn get_with_parameters(&self, url: Url, query_parameters: &[(&str, &str)]) -> Result<String, Box<dyn ErrorTrait>>;
-    fn post(&self, url: Url, payload: &Value) -> Result<String, Box<dyn ErrorTrait>>;
+    fn get(&self, url: Url) -> impl std::future::Future<Output = Result<String, Box<dyn ErrorTrait>>> + Send;
+    fn get_with_parameters(&self, url: Url, query_parameters: &[(&str, &str)]) -> impl std::future::Future<Output = Result<String, Box<dyn ErrorTrait>>> + Send;
+    fn post(&self, url: Url, payload: &Value) -> impl std::future::Future<Output = Result<String, Box<dyn ErrorTrait>>> + Send;
 }
 
 #[derive(Debug, Clone)]
@@ -63,8 +65,8 @@ pub struct ApiInterface<Client>
     where Client: RequestClient {
     http_client: Client,
     api_endpoint: Url,
-    last_request_time: Option<Instant>,
     verbose: bool,
+    rate_limiter: DefaultDirectRateLimiter,
 }
 
 impl<Client> ApiInterface<Client>
@@ -73,24 +75,13 @@ impl<Client> ApiInterface<Client>
         Ok(Self {
             http_client: Client::build()?,
             api_endpoint: url!("https://api.scryfall.com/"),
-            last_request_time: None,
             verbose,
+            rate_limiter: RateLimiter::direct(Quota::per_second(nonzero!(10 as u32))),
         })
     }
 
-    fn rate_limit(&mut self) {
-        if let Some(last_request_time) = self.last_request_time {
-            if last_request_time.elapsed() < Duration::from_millis(100) {
-                println!("Sleeping briefly for rate limiting");
-                sleep(Duration::from_millis(100) - last_request_time.elapsed());
-            }
-        } else {
-            self.last_request_time = Some(Instant::now());
-        }
-    }
-
-    pub fn get_card(&mut self, card: &CollectionCardIdentifier) -> Result<ApiObject, Box<dyn ErrorTrait>> {
-        self.rate_limit();
+    pub async fn get_card(&mut self, card: &CollectionCardIdentifier) -> Result<ApiObject, Box<dyn ErrorTrait>> {
+        self.rate_limiter.until_ready().await;
 
         if self.verbose {
             println!("Sending API request for card {:?}", card);
@@ -98,24 +89,24 @@ impl<Client> ApiInterface<Client>
 
         let response = match card {
             CollectionCardIdentifier::Id(uuid) => {
-                self.http_client.get(self.api_endpoint.join(format!("{}/{}", SPECIFIED_CARD_METHOD, uuid).as_str())?)?
+                self.http_client.get(self.api_endpoint.join(format!("{}/{}", SPECIFIED_CARD_METHOD, uuid).as_str())?).await?
             },
             CollectionCardIdentifier::MtgoId(id) => {
-                self.http_client.get(self.api_endpoint.join(format!("{}/{}", MTGO_CARD_METHOD, id).as_str())?)?
+                self.http_client.get(self.api_endpoint.join(format!("{}/{}", MTGO_CARD_METHOD, id).as_str())?).await?
             },
             CollectionCardIdentifier::MultiverseId(id) => {
-                self.http_client.get(self.api_endpoint.join(format!("{}/{}", MULTIVERSE_CARD_METHOD, id).as_str())?)?
+                self.http_client.get(self.api_endpoint.join(format!("{}/{}", MULTIVERSE_CARD_METHOD, id).as_str())?).await?
             },
             CollectionCardIdentifier::OracleId(_) |
             CollectionCardIdentifier::IllustrationId(_) => return Err(Box::new(InvalidCardIdentifierError)),
             CollectionCardIdentifier::Name(name) => {
-                self.http_client.get_with_parameters(self.api_endpoint.join(NAMED_CARD_METHOD)?, &[("fuzzy", name)])?
+                self.http_client.get_with_parameters(self.api_endpoint.join(NAMED_CARD_METHOD)?, &[("fuzzy", name)]).await?
             },
             CollectionCardIdentifier::NameSet((name, set)) => {
-                self.http_client.get_with_parameters(self.api_endpoint.join(NAMED_CARD_METHOD)?, &[("fuzzy", name), ("set", set)])?
+                self.http_client.get_with_parameters(self.api_endpoint.join(NAMED_CARD_METHOD)?, &[("fuzzy", name), ("set", set)]).await?
             },
             CollectionCardIdentifier::CollectorNumberSet((collector_number, set)) => {
-                self.http_client.get(self.api_endpoint.join(format!("{}/{}/{}", SPECIFIED_CARD_METHOD, set, collector_number).as_str())?)?
+                self.http_client.get(self.api_endpoint.join(format!("{}/{}/{}", SPECIFIED_CARD_METHOD, set, collector_number).as_str())?).await?
             },
         };
 
@@ -127,18 +118,18 @@ impl<Client> ApiInterface<Client>
         }
     }
 
-    pub fn get_cards_from_list(&mut self, identifiers: &[&CollectionCardIdentifier]) -> Result<ApiObject, Box<dyn ErrorTrait>> {
+    pub async fn get_cards_from_list(&mut self, identifiers: &[&CollectionCardIdentifier]) -> Result<ApiObject, Box<dyn ErrorTrait>> {
         let identifiers_json = json!({
             "identifiers": identifiers
         });
 
-        self.rate_limit();
+        self.rate_limiter.until_ready().await;
 
         if self.verbose {
             println!("Sending API request for multiple cards");
         }
 
-        let response = self.http_client.post(self.api_endpoint.join(CARD_COLLECTION_METHOD)?, &identifiers_json)?;
+        let response = self.http_client.post(self.api_endpoint.join(CARD_COLLECTION_METHOD)?, &identifiers_json).await?;
 
         let api_object = from_str(&response)?;
         if let ApiObject::Error(error) = api_object {
@@ -148,14 +139,14 @@ impl<Client> ApiInterface<Client>
         }
     }
 
-    fn resolve_multi_page_search(&mut self, search_url: Url) -> Result<Vec<ApiObject>, Box<dyn ErrorTrait>> {
-        self.rate_limit();
+    async fn resolve_multi_page_search(&mut self, search_url: Url) -> Result<Vec<ApiObject>, Box<dyn ErrorTrait>> {
+        self.rate_limiter.until_ready().await;
 
         if self.verbose {
             println!("Sending API request for next page of results");
         }
 
-        let response = self.http_client.get(search_url)?;
+        let response = self.http_client.get(search_url).await?;
 
         let api_object = from_str(&response)?;
         if let ApiObject::Error(error) = api_object {
@@ -179,16 +170,16 @@ impl<Client> ApiInterface<Client>
             return Ok(current_page.data);
         };
 
-        current_page.data.append(&mut self.resolve_multi_page_search(next_page_url)?);
+        current_page.data.append(&mut self.resolve_multi_page_search(next_page_url).await?);
         Ok(current_page.data)
     }
 
-    pub fn get_all_printings(&mut self, card: Card) -> Result<Vec<Card>, Box<dyn ErrorTrait>> {
+    pub async fn get_all_printings(&mut self, card: Card) -> Result<Vec<Card>, Box<dyn ErrorTrait>> {
         if self.verbose {
             println!("Sending API request for all printings of {}", card.name);
         }
 
-        let search_results = self.resolve_multi_page_search(card.prints_search_uri)?;
+        let search_results = self.resolve_multi_page_search(card.prints_search_uri).await?;
 
         let mut card_printings = Vec::new();
         for api_object in search_results {
@@ -202,14 +193,14 @@ impl<Client> ApiInterface<Client>
         Ok(card_printings)
     }
 
-    fn get_bulk_data_endpoint(&mut self) -> Result<ApiObject, Box<dyn ErrorTrait>> {
-        self.rate_limit();
+    async fn get_bulk_data_endpoint(&mut self) -> Result<ApiObject, Box<dyn ErrorTrait>> {
+        self.rate_limiter.until_ready().await;
 
         if self.verbose {
             println!("Sending API request for bulk data endpoints");
         }
 
-        let response = self.http_client.get(self.api_endpoint.join(BULK_DATA_METHOD)?)?;
+        let response = self.http_client.get(self.api_endpoint.join(BULK_DATA_METHOD)?).await?;
 
         let api_object = from_str(&response)?;
         if let ApiObject::Error(error) = api_object {
@@ -219,8 +210,8 @@ impl<Client> ApiInterface<Client>
         }
     }
 
-    pub fn get_bulk_data(&mut self) -> Result<String, Box<dyn ErrorTrait>> {
-        let received_object = self.get_bulk_data_endpoint()?;
+    pub async fn get_bulk_data(&mut self) -> Result<String, Box<dyn ErrorTrait>> {
+        let received_object = self.get_bulk_data_endpoint().await?;
         let ApiObject::BulkData(bulk_data_endpoint) = received_object else {
             return Err(Box::new(InvalidApiObjectError { expected: "BulkData",  received: received_object }));
         };
@@ -228,7 +219,7 @@ impl<Client> ApiInterface<Client>
         if self.verbose {
             println!("Sending API request for bulk data");
         }
-        let response = self.http_client.get(bulk_data_endpoint.download_uri)?;
+        let response = self.http_client.get(bulk_data_endpoint.download_uri).await?;
 
         Ok(response)
     }

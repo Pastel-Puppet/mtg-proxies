@@ -7,4 +7,5 @@ edition = "2024"
 clap = { version = "4.5.38", features = ["derive"] }
 clio = { version = "0.3.5", features = ["clap", "clap-parse"] }
 scryfall = { path = "../scryfall" }
+tokio = { version = "1.45.1", features = ["full"] }
 url = { version = "2.5.4" }

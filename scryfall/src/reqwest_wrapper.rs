@@ -1,5 +1,5 @@
 use std::error::Error;
-use reqwest::{blocking::Client, header::ACCEPT};
+use reqwest::{Client, header::ACCEPT};
 use serde_json::Value;
 use url::Url;
 
@@ -25,16 +25,16 @@ impl RequestClient for ReqwestWrapper {
         })
     }
 
-    fn get(&self, url: Url) -> Result<String, Box<(dyn Error)>> {
+    async fn get(&self, url: Url) -> Result<String, Box<(dyn Error)>> {
         let response = self.client.get(url)
             .header(ACCEPT, "application/json")
-            .send()?
-            .text()?;
+            .send().await?
+            .text().await?;
 
         Ok(response)
     }
 
-    fn get_with_parameters(&self, url: Url, query_parameters: &[(&str, &str)]) -> Result<String, Box<(dyn Error)>> {
+    async fn get_with_parameters(&self, url: Url, query_parameters: &[(&str, &str)]) -> Result<String, Box<(dyn Error)>> {
         let mut request = self.client.get(url);
 
         if !query_parameters.is_empty() {
@@ -43,18 +43,18 @@ impl RequestClient for ReqwestWrapper {
 
         let response = request
             .header(ACCEPT, "application/json")
-            .send()?
-            .text()?;
+            .send().await?
+            .text().await?;
 
         Ok(response)
     }
 
-    fn post(&self, url: Url, payload: &Value) -> Result<String, Box<(dyn Error)>> {
+    async fn post(&self, url: Url, payload: &Value) -> Result<String, Box<(dyn Error)>> {
         let response = self.client.post(url)
             .json(payload)
             .header(ACCEPT, "application/json")
-            .send()?
-            .text()?;
+            .send().await?
+            .text().await?;
 
         Ok(response)
     }

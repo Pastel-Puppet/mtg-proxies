@@ -122,7 +122,7 @@ impl<Client> ApiInterface<Client>
 
         self.rate_limiter.until_ready().await;
 
-        info!("Sending API request for multiple cards");
+        info!("Sending API request for {} cards", identifiers.len());
 
         let response = self.http_client.post(self.api_endpoint.join(CARD_COLLECTION_METHOD)?, &identifiers_json).await?;
 

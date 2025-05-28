@@ -6,13 +6,45 @@
   </head>
   <body>
     <script type="module">
-      import init from './pkg/wasm_proxies.js';
+      import init, {generate_proxies_from_textbox, generate_proxies_from_file_contents} from './pkg/wasm_proxies.js';
 
       async function run() {
         await init();
       }
 
+      function proxiesTxtButtonClicked() {
+        generate_proxies_from_textbox();
+      }
+
+      function proxiesFileButtonClicked() {
+        const proxies_file_select = document.getElementById("proxies_file_select");
+
+        if (proxies_file_select) {
+          const file = proxies_file_select.files[0]
+
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+              generate_proxies_from_file_contents(reader.result, file.type);
+            };
+            reader.readAsText(proxies_file_select.files[0]);
+          }
+        }
+      }
+
       run();
+
+      document.getElementById("proxies_txt_button").addEventListener("click", proxiesTxtButtonClicked);
+      document.getElementById("proxies_file_button").addEventListener("click", proxiesFileButtonClicked);
     </script>
+
+    <div id="options" class="options">
+      <textarea id="deck_list" placeholder="Enter deck list here"></textarea>
+      <input id="proxies_txt_button" type="button" value="Generate proxies">
+      <input id="proxies_file_select" type="file" accept="text/plain,application/json">
+      <input id="proxies_file_button" type="button" value="Generate proxies">
+    </div>
+    
+    <div id="proxies" class="proxies"></div>
   </body>
 </html>

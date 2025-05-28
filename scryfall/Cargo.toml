@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 governor = { version = "0.10.0", default-features = false, features = ["std", "dashmap", "quanta"] }
+log = "0.4.27"
 nonzero_ext = "0.3.0"
 reqwest = { version = "0.12.15", features = ["json"] }
 serde = { version = "1.0.219", features = ["derive"] }

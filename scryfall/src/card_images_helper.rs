@@ -1,3 +1,4 @@
+use log::error;
 use url::Url;
 
 use crate::{api_classes::ImageUris, fetch_card_list::ResolvedCard};
@@ -50,7 +51,7 @@ pub fn extract_images(cards: &Vec<&ResolvedCard>, exclude_basic_lands: bool, ima
         }
 
         if !found_image {
-            println!("Could not find image data for {}", card.card.name);
+            error!("Could not find image data for {}", card.card.name);
         }
     }
 

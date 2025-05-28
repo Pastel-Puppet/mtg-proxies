@@ -2,6 +2,7 @@ use std::{collections::HashSet, error::Error, hash::RandomState, io::Write};
 
 use clap::{Parser, ValueEnum};
 use clio::{Input, OutputPath};
+use log::LevelFilter;
 use url::Url;
 
 use scryfall::{api_interface::ApiInterface, card_images_helper::{extract_images, ImageUriType}, deck_formats::{parse_json_file, parse_txt_file}, fetch_card_list::{resolve_cards, ResolvedCard}, reqwest_wrapper::ReqwestWrapper};
@@ -91,8 +92,17 @@ async fn get_cards_from_file(deck_file: &mut Input, interface: &mut ApiInterface
 #[tokio::main]
 async fn main() {
     let mut args = Args::parse();
+    let mut logging_builder = colog::default_builder();
 
-    let mut interface = ApiInterface::<ReqwestWrapper>::new(args.verbose).expect("Could not initialise HTTP client");
+    if args.verbose {
+        logging_builder.filter(None, LevelFilter::Info);
+    } else {
+        logging_builder.filter(None, LevelFilter::Warn);
+    }
+
+    logging_builder.init();
+
+    let mut interface = ApiInterface::<ReqwestWrapper>::new().expect("Could not initialise HTTP client");
 
     let cards = get_cards_from_file(&mut args.deck, &mut interface, args.include_tokens).await;
 

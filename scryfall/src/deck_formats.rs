@@ -1,6 +1,7 @@
 use std::{collections::HashMap, error::Error, fs::File, io::{BufReader, Read}};
 
-use serde_json::from_reader;
+use log::error;
+use serde_json::{from_reader, from_str};
 use url::Url;
 
 use crate::{api_classes::Deck, collection_card_identifier::CollectionCardIdentifier};
@@ -37,13 +38,18 @@ fn parse_txt_line(line: String) -> Option<(CollectionCardIdentifier, usize)> {
 }
 
 pub fn parse_txt_file(file: &File) -> Result<HashMap<CollectionCardIdentifier, usize>, Box<dyn Error>> {
-    let mut cards = HashMap::new();
     let mut deck_file = String::new();
     let mut buffered_reader = BufReader::new(file);
     buffered_reader.read_to_string(&mut deck_file)?;
 
-    for deck_file_line in deck_file.lines() {
-        if let Some((card, count)) = parse_txt_line(deck_file_line.to_string()) {
+    parse_txt_data(&deck_file)
+}
+
+pub fn parse_txt_data(txt_data: &str) -> Result<HashMap<CollectionCardIdentifier, usize>, Box<dyn Error>> {
+    let mut cards = HashMap::new();
+
+    for deck_line in txt_data.lines() {
+        if let Some((card, count)) = parse_txt_line(deck_line.to_string()) {
             cards.insert(card, count);
         }
     }
@@ -52,10 +58,16 @@ pub fn parse_txt_file(file: &File) -> Result<HashMap<CollectionCardIdentifier, u
 }
 
 pub fn parse_json_file(file: &File) -> Result<HashMap<CollectionCardIdentifier, usize>, Box<dyn Error>> {
-    let mut card_map = HashMap::new();
+    let mut deck_file = String::new();
+    let mut buffered_reader = BufReader::new(file);
+    buffered_reader.read_to_string(&mut deck_file)?;
 
-    let buffered_reader = BufReader::new(file);
-    let deck: Deck = from_reader(buffered_reader)?;
+    parse_json_data(&deck_file)
+}
+
+pub fn parse_json_data(json_data: &str) -> Result<HashMap<CollectionCardIdentifier, usize>, Box<dyn Error>> {
+    let mut card_map = HashMap::new();
+    let deck: Deck = from_str(&json_data)?;
 
     for (section_name, deck_section) in deck.entries.iter() {
         if section_name == "maybeboard" {
@@ -69,7 +81,7 @@ pub fn parse_json_file(file: &File) -> Result<HashMap<CollectionCardIdentifier, 
             }
 
             if card.found {
-                println!("Could not find ID for card {}", &card.raw_text);
+                error!("Could not find ID for card {}", &card.raw_text);
             }
         }
     }
@@ -102,7 +114,7 @@ pub fn images_from_json_file(file: &File, exclude_basic_lands: bool) -> Result<V
             }
 
             if card.found {
-                println!("Could not find image for card {}", &card.raw_text);
+                error!("Could not find image for card {}", &card.raw_text);
             }
         }
     }

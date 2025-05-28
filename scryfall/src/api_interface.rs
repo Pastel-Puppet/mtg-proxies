@@ -1,5 +1,6 @@
 use std::{error::Error as ErrorTrait, fmt::Display};
 use governor::{DefaultDirectRateLimiter, Quota, RateLimiter};
+use log::{info, warn};
 use nonzero_ext::nonzero;
 use serde_json::{from_str, json, Value};
 use url::Url;
@@ -65,17 +66,15 @@ pub struct ApiInterface<Client>
     where Client: RequestClient {
     http_client: Client,
     api_endpoint: Url,
-    verbose: bool,
     rate_limiter: DefaultDirectRateLimiter,
 }
 
 impl<Client> ApiInterface<Client>
     where Client: RequestClient {
-    pub fn new(verbose: bool) -> Result<Self, Box<dyn ErrorTrait>> {
+    pub fn new() -> Result<Self, Box<dyn ErrorTrait>> {
         Ok(Self {
             http_client: Client::build()?,
             api_endpoint: url!("https://api.scryfall.com/"),
-            verbose,
             rate_limiter: RateLimiter::direct(Quota::per_second(nonzero!(10 as u32))),
         })
     }
@@ -83,9 +82,7 @@ impl<Client> ApiInterface<Client>
     pub async fn get_card(&mut self, card: &CollectionCardIdentifier) -> Result<ApiObject, Box<dyn ErrorTrait>> {
         self.rate_limiter.until_ready().await;
 
-        if self.verbose {
-            println!("Sending API request for card {:?}", card);
-        }
+        info!("Sending API request for card {:?}", card);
 
         let response = match card {
             CollectionCardIdentifier::Id(uuid) => {
@@ -125,9 +122,7 @@ impl<Client> ApiInterface<Client>
 
         self.rate_limiter.until_ready().await;
 
-        if self.verbose {
-            println!("Sending API request for multiple cards");
-        }
+        info!("Sending API request for multiple cards");
 
         let response = self.http_client.post(self.api_endpoint.join(CARD_COLLECTION_METHOD)?, &identifiers_json).await?;
 
@@ -142,9 +137,7 @@ impl<Client> ApiInterface<Client>
     async fn resolve_multi_page_search(&mut self, search_url: Url) -> Result<Vec<ApiObject>, Box<dyn ErrorTrait>> {
         self.rate_limiter.until_ready().await;
 
-        if self.verbose {
-            println!("Sending API request for next page of results");
-        }
+        info!("Sending API request for next page of results");
 
         let response = self.http_client.get(search_url).await?;
 
@@ -166,7 +159,7 @@ impl<Client> ApiInterface<Client>
         }
 
         let Some(next_page_url) = current_page.next_page else {
-            println!("Current page claims to have more data but fetch URL is absent");
+            warn!("Current page claims to have more data but fetch URL is absent");
             return Ok(current_page.data);
         };
 
@@ -175,9 +168,7 @@ impl<Client> ApiInterface<Client>
     }
 
     pub async fn get_all_printings(&mut self, card: Card) -> Result<Vec<Card>, Box<dyn ErrorTrait>> {
-        if self.verbose {
-            println!("Sending API request for all printings of {}", card.name);
-        }
+        info!("Sending API request for all printings of {}", card.name);
 
         let search_results = self.resolve_multi_page_search(card.prints_search_uri).await?;
 
@@ -196,9 +187,7 @@ impl<Client> ApiInterface<Client>
     async fn get_bulk_data_endpoint(&mut self) -> Result<ApiObject, Box<dyn ErrorTrait>> {
         self.rate_limiter.until_ready().await;
 
-        if self.verbose {
-            println!("Sending API request for bulk data endpoints");
-        }
+        info!("Sending API request for bulk data endpoints");
 
         let response = self.http_client.get(self.api_endpoint.join(BULK_DATA_METHOD)?).await?;
 
@@ -216,9 +205,7 @@ impl<Client> ApiInterface<Client>
             return Err(Box::new(InvalidApiObjectError { expected: "BulkData",  received: received_object }));
         };
 
-        if self.verbose {
-            println!("Sending API request for bulk data");
-        }
+        info!("Sending API request for bulk data");
         let response = self.http_client.get(bulk_data_endpoint.download_uri).await?;
 
         Ok(response)

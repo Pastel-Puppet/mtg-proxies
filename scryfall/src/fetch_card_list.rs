@@ -1,5 +1,7 @@
 use std::{collections::HashMap, error::Error, fmt::Display};
 
+use log::warn;
+
 use crate::{api_classes::{ApiObject, Card, CardNotFound}, api_interface::{ApiInterface, RequestClient}, collection_card_identifier::CollectionCardIdentifier};
 
 #[derive(Debug, Clone)]
@@ -81,7 +83,7 @@ fn get_count_for_card_identifier(card_map: &HashMap<CollectionCardIdentifier, us
         Some(count) => Some(*count),
         None => {
             if use_default {
-                println!("Could not find card {:?} on the deck list, assuming it has one copy", card_identifier);
+                warn!("Could not find card {:?} on the deck list, assuming it has one copy", card_identifier);
                 Some(1)
             } else {
                 None
@@ -145,7 +147,7 @@ pub async fn resolve_cards<Client: RequestClient>(card_map: &mut HashMap<Collect
 
     for not_found_card in not_found_cards_list {
         let resolved_card = fuzzy_resolve(card_map, api_interface, &CollectionCardIdentifier::Name(not_found_card.name.clone())).await?;
-        println!("{} did not match any card, using closest match: {}", not_found_card.name, resolved_card.card.name);
+        warn!("{} did not match any card, using closest match: {}", not_found_card.name, resolved_card.card.name);
         resolved_cards.push(resolved_card);
     }
 

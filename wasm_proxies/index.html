@@ -1,50 +1,98 @@
+<!doctype html>
 <html>
   <head>
     <title>Proxy Generator</title>
-    <link href="style.css" rel="stylesheet" />
+
+    <link href="style.css" rel="stylesheet" media="screen" />
+    <link href="print.css" rel="stylesheet" media="print" />
+    <link href="favicon.ico" rel="icon" type="image/x-icon" />
+
+    <link href="pkg/wasm_proxies_bg.wasm" rel="preload" as="fetch" type="application/wasm" crossorigin />
+    <link href="pkg/wasm_proxies.js" rel="modulepreload" />
+    <link href="https://api.scryfall.com/" rel="preconnect" crossorigin="true" />
+    <link href="https://cards.scryfall.com/" rel="preconnect" crossorigin="true" />
+
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
   </head>
+
   <body>
-    <script type="module">
-      import init, {generate_proxies_from_textbox, generate_proxies_from_file_contents} from './pkg/wasm_proxies.js';
+    <script type="module" src="interface.js" blocking="render"></script>
 
-      async function run() {
-        await init();
-      }
+    <div id="options" class="options boxed">
+      <fieldset class="boxed">
+        <legend>Enter deck list</legend>
 
-      function proxiesTxtButtonClicked() {
-        generate_proxies_from_textbox();
-      }
+        <textarea id="deck-list" placeholder="Enter deck list here"></textarea>
+        <textarea id="old-deck-list" placeholder="Enter previous deck list here" style="display: none;"></textarea>
+        <input id="proxies-txt-button" type="button" value="Generate proxies">
+        <input id="proxies-file-select" type="file" accept="text/plain,application/json">
+        <input id="old-proxies-file-select" type="file" accept="text/plain,application/json" style="display: none;">
+        <input id="proxies-file-button" type="button" value="Generate proxies">
+      </fieldset>
+      
+      <fieldset class="boxed">
+        <legend>Proxy options</legend>
 
-      function proxiesFileButtonClicked() {
-        const proxies_file_select = document.getElementById("proxies_file_select");
+        <div>
+          <input type="checkbox" id="include-basic-lands" name="include-basic-lands" checked />
+          <label for="include-basic-lands">Include basic lands</label>
+        </div>
 
-        if (proxies_file_select) {
-          const file = proxies_file_select.files[0]
+        <div>
+          <input type="checkbox" id="include-tokens" name="include-tokens" checked />
+          <label for="include-tokens">Include associated tokens</label>
+        </div>
 
-          if (file) {
-            const reader = new FileReader();
-            reader.onload = () => {
-              generate_proxies_from_file_contents(reader.result, file.type);
-            };
-            reader.readAsText(proxies_file_select.files[0]);
-          }
-        }
-      }
+        <div>
+          <input type="checkbox" id="deck-diff" name="deck-diff" />
+          <label for="deck-diff">Provide two deck lists and print only newly added cards</label>
+        </div>
 
-      run();
+        <fieldset class="boxed">
+          <legend>Image quality</legend>
+          <div>
+            <input type="radio" id="image-type-small-radio" name="image-type" value="small" />
+            <label for="image-type-small-radio">Small (lowest quality)</label>
+          </div>
 
-      document.getElementById("proxies_txt_button").addEventListener("click", proxiesTxtButtonClicked);
-      document.getElementById("proxies_file_button").addEventListener("click", proxiesFileButtonClicked);
-    </script>
+          <div>
+            <input type="radio" id="image-type-normal-radio" name="image-type" value="normal" />
+            <label for="image-type-normal-radio">Normal</label>
+          </div>
 
-    <div id="options" class="options">
-      <textarea id="deck_list" placeholder="Enter deck list here"></textarea>
-      <input id="proxies_txt_button" type="button" value="Generate proxies">
-      <input id="proxies_file_select" type="file" accept="text/plain,application/json">
-      <input id="proxies_file_button" type="button" value="Generate proxies">
+          <div>
+            <input type="radio" id="image-type-large-radio" name="image-type" value="large" />
+            <label for="image-type-large-radio">Large</label>
+          </div>
+
+          <div>
+            <input type="radio" id="image-type-png-radio" name="image-type" value="png" checked />
+            <label for="image-type-png-radio">PNG (highest quality)</label>
+          </div>
+
+          <div>
+            <input type="radio" id="image-type-art-crop-radio" name="image-type" value="art-crop" />
+            <label for="image-type-art-crop-radio">Art crop</label>
+          </div>
+
+          <div>
+            <input type="radio" id="image-type-border-crop-radio" name="image-type" value="border-crop" />
+            <label for="image-type-border-crop-radio">Border crop</label>
+          </div>
+        </fieldset>
+
+        <fieldset class="boxed">
+          <legend>Add custom cards</legend>
+
+          <div>
+            <input type="file" id="custom-cards-upload" name="custom-cards-upload" accept="image/*" multiple />
+            <label for="custom-cards-upload">Upload custom cards</label>
+            <input type="button" id="custom-cards-clear-upload" name="custom-cards-clear-upload" value="Clear selected files" />
+          </div>
+        </fieldset>
+      </fieldset>
     </div>
     
-    <div id="proxies" class="proxies"></div>
+    <div id="proxies" class="proxies boxed"></div>
   </body>
 </html>

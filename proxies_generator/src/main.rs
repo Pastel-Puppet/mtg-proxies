@@ -1,11 +1,10 @@
-use std::{collections::HashSet, error::Error, hash::RandomState, io::Write};
-
+use std::{error::Error, io::Write};
 use clap::{Parser, ValueEnum};
 use clio::{Input, OutputPath};
 use log::LevelFilter;
 use url::Url;
 
-use scryfall::{api_interface::ApiInterface, card_images_helper::{extract_images, ImageUriType}, deck_formats::{parse_json_file, parse_txt_file}, fetch_card_list::{resolve_cards, ResolvedCard}, reqwest_wrapper::ReqwestWrapper};
+use scryfall::{api_interface::ApiInterface, card_images_helper::{extract_images, ImageUriType}, deck_formats::{deck_diff, parse_json_file, parse_txt_file}, fetch_card_list::{resolve_cards, ResolvedCard}, reqwest_wrapper::ReqwestWrapper};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum ImageType {
@@ -50,17 +49,15 @@ struct Args {
     old_deck: Option<Input>,
 }
 
-fn generate_proxies_html(card_images: &Vec<(Url, usize)>, extra_cards: &Vec<String>) -> Result<String, Box<dyn Error>> {
+fn generate_proxies_html(card_images: &Vec<Url>, extra_cards: &Vec<String>) -> Result<String, Box<dyn Error>> {
     let mut html = "<!DOCTYPE html><html><style>@page {size: auto;margin: 5mm 10mm;}.card{margin: 0;page-break-inside: avoid;width: 63mm;height: 88mm;}</style><body style=\"margin: 0 0 30px;padding: 0;font-size: 0;\">".to_owned();
 
     for extra_card in extra_cards {
         html += &format!("<img src=\"{}\" class=\"card\"/>", extra_card);
     }
 
-    for (image_url, count) in card_images {
-        for _ in 0..*count {
-            html += &format!("<img src={} class=\"card\"/>", image_url);
-        }
+    for image_url in card_images {
+        html += &format!("<img src={} class=\"card\"/>", image_url);
     }
 
     html += "</body></html>";
@@ -107,26 +104,19 @@ async fn main() {
     let cards = get_cards_from_file(&mut args.deck, &mut interface, args.include_tokens).await;
 
     let card_images = if let Some(mut old_deck) = args.old_deck {
-        let cards_set: HashSet<ResolvedCard, RandomState> = HashSet::from_iter(cards);
-
         let old_cards = get_cards_from_file(&mut old_deck, &mut interface, args.include_tokens).await;
-        let old_cards_set: HashSet<ResolvedCard, RandomState> = HashSet::from_iter(old_cards);
+        let difference = deck_diff(old_cards, cards);
 
-        let added_cards = cards_set.difference(&old_cards_set);
-        let removed_cards = old_cards_set.difference(&cards_set);
+        println!("Added:{}\n", difference.added.iter().fold("".to_owned(), |acc, card| format!("{}\n{}", acc, card.name)));
+        println!("Removed:{}\n", difference.removed.iter().fold("".to_owned(), |acc, card| format!("{}\n{}", acc, card.name)));
 
-        println!("Added:{}\n", added_cards.clone().fold("".to_owned(), |acc, card| format!("{}\n{}", acc, card)));
-        println!("Removed:{}\n", removed_cards.fold("".to_owned(), |acc, card| format!("{}\n{}", acc, card)));
-
-        let added_cards_vec = Vec::from_iter(added_cards);
-
-        extract_images(&added_cards_vec, args.exclude_basic_lands, args.image_type.unwrap_or(ImageType::Large).into())
+        extract_images(&difference.added, args.exclude_basic_lands, args.image_type.unwrap_or(ImageType::Large).into())
     } else {
         for card in &cards {
             println!("{}", card);
         }
 
-        extract_images(&Vec::from_iter(cards.iter()), args.exclude_basic_lands, args.image_type.unwrap_or(ImageType::Large).into())
+        extract_images(&cards.into_iter().map(|card| card.card).collect(), args.exclude_basic_lands, args.image_type.unwrap_or(ImageType::Large).into())
     };
 
     let proxies_html = generate_proxies_html(&card_images, &args.extra_cards).expect("Could not generate proxies HTML content");

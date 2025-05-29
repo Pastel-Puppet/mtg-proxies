@@ -1,7 +1,7 @@
 use log::error;
 use url::Url;
 
-use crate::{api_classes::ImageUris, fetch_card_list::ResolvedCard};
+use crate::api_classes::{Card, ImageUris};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImageUriType {
@@ -24,9 +24,9 @@ fn extract_image(images: &ImageUris, image_type: ImageUriType) -> Url {
     }
 }
 
-pub fn extract_images(cards: &Vec<&ResolvedCard>, exclude_basic_lands: bool, image_type: ImageUriType) -> Vec<(Url, usize)> {
+pub fn extract_images(cards: &Vec<Card>, exclude_basic_lands: bool, image_type: ImageUriType) -> Vec<Url> {
     let filtered_cards = if exclude_basic_lands {
-        &cards.iter().filter(|card| card.card.type_line.as_ref().is_none_or(|type_line| !type_line.starts_with("Basic Land"))).cloned().collect()
+        &cards.iter().filter(|card| card.type_line.as_ref().is_none_or(|type_line| !type_line.starts_with("Basic Land"))).cloned().collect()
     } else {
         cards
     };
@@ -36,22 +36,22 @@ pub fn extract_images(cards: &Vec<&ResolvedCard>, exclude_basic_lands: bool, ima
     for card in filtered_cards {
         let mut found_image = false;
 
-        if let Some(faces) = &card.card.card_faces {
+        if let Some(faces) = &card.card_faces {
             for face in faces {
                 if let Some(image_uris) = &face.image_uris {
-                    image_list.push((extract_image(image_uris, image_type), card.count));
+                    image_list.push(extract_image(image_uris, image_type));
                     found_image = true;
                 }
             }
         }
         
-        if let Some(image_uris) = &card.card.image_uris {
-            image_list.push((extract_image(image_uris, image_type), card.count));
+        if let Some(image_uris) = &card.image_uris {
+            image_list.push(extract_image(image_uris, image_type));
             found_image = true;
         }
 
         if !found_image {
-            error!("Could not find image data for {}", card.card.name);
+            error!("Could not find image data for {}", card.name);
         }
     }
 

@@ -1,0 +1,22 @@
+@page {
+    size: A4 portrait;
+    margin: 5mm 10mm;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+.options {
+    display: none;
+}
+
+.card {
+    width: 63mm;
+    height: 88mm;
+}
+
+.proxies {
+    font-size: 0;
+}

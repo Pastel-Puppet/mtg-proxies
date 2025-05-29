@@ -1,20 +1,14 @@
-@media print {
-    @page {
-        size: auto;
-        margin: 5mm 10mm;
-    }
-
-    body {
-        margin: 0;
-        padding: 0;
-    }
-
-    .options {
-        display: none;
-    }
-}
-
 .card {
     width: 63mm;
     height: 88mm;
+}
+
+.boxed {
+    border-style: groove;
+    border-width: 2px;
+    border-color: rgb(233, 233, 237);
+}
+
+.proxies {
+    font-size: 0;
 }

@@ -2,7 +2,7 @@ use std::{collections::HashMap, error::Error, fmt::Display};
 
 use log::warn;
 
-use crate::{api_classes::{ApiObject, Card, CardNotFound}, api_interface::{ApiInterface, RequestClient}, collection_card_identifier::CollectionCardIdentifier};
+use crate::{api_classes::{ApiObject, Card, CardNotFound}, api_interface::{ApiInterface, RequestClient}, collection_card_identifier::CollectionCardIdentifier, token_handling::is_token};
 
 #[derive(Debug, Clone)]
 enum CardParseErrorCause {
@@ -32,6 +32,18 @@ impl Error for CardParseError {}
 pub struct ResolvedCard {
     pub count: usize,
     pub card: Card,
+}
+
+impl PartialOrd for ResolvedCard {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for ResolvedCard {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.card.cmp(&other.card)
+    }
 }
 
 impl Display for ResolvedCard {
@@ -131,7 +143,7 @@ pub async fn resolve_cards<Client: RequestClient>(card_map: &mut HashMap<Collect
                     if fetch_related_tokens {
                         if let Some(related_cards) = &card.all_parts {
                             for related_card in related_cards {
-                                if related_card.component == "token" {
+                                if is_token(related_card) {
                                     related_tokens.insert(CollectionCardIdentifier::Id(related_card.id), 1);
                                 }
                             }

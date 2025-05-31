@@ -1,4 +1,4 @@
-use std::{collections::HashMap, error::Error, fmt::Display};
+use std::{collections::HashMap, error::Error, fmt::Display, hash::RandomState};
 
 use log::warn;
 
@@ -123,7 +123,10 @@ pub async fn resolve_cards<Client: RequestClient>(card_map: &mut HashMap<Collect
     let unresolved_cards: Vec<&CollectionCardIdentifier> = card_map.keys().collect();
     let mut related_tokens: HashMap<CollectionCardIdentifier, usize> = HashMap::new();
 
-    for unresolved_cards_chunk in unresolved_cards.chunks(75) {
+    let num_of_chunks = unresolved_cards.len().div_ceil(75);
+    let length_of_chunks = unresolved_cards.len().div_ceil(num_of_chunks);
+
+    for unresolved_cards_chunk in unresolved_cards.chunks(length_of_chunks) {
         let list = match api_interface.get_cards_from_list(unresolved_cards_chunk).await? {
             ApiObject::List(list) => list,
             other => return Err(Box::new(CardParseError { cause: CardParseErrorCause::ObjectNotList(other) })),
@@ -164,7 +167,17 @@ pub async fn resolve_cards<Client: RequestClient>(card_map: &mut HashMap<Collect
     }
 
     if fetch_related_tokens {
-        resolved_cards.append(&mut Box::pin(resolve_cards(&mut related_tokens, false, api_interface)).await?);
+        let tokens = Box::pin(resolve_cards(&mut related_tokens, false, api_interface)).await?;
+        let token_oracle_ids: HashMap<uuid::Uuid, ResolvedCard, RandomState> = HashMap::from_iter(tokens.into_iter().filter_map(|card| {
+            if let Some(oracle_id) = card.card.oracle_id {
+                Some((oracle_id, card))
+            } else {
+                warn!("Dropping token {} as it has no oracle ID (Scryfall URL: {})", card.card.name, card.card.scryfall_uri);
+                None
+            }
+        }));
+
+        resolved_cards.append(&mut token_oracle_ids.into_values().collect());
     }
 
     Ok(resolved_cards)

@@ -3,96 +3,108 @@
   <head>
     <title>Proxy Generator</title>
 
-    <link href="style.css" rel="stylesheet" media="screen" />
-    <link href="print.css" rel="stylesheet" media="print" />
-    <link href="favicon.ico" rel="icon" type="image/x-icon" />
+    <link href="style.css" rel="stylesheet" media="screen">
+    <link href="print.css" rel="stylesheet" media="print">
+    <link href="favicon.ico" rel="icon" type="image/x-icon">
 
-    <link href="pkg/wasm_proxies_bg.wasm" rel="preload" as="fetch" type="application/wasm" crossorigin />
-    <link href="pkg/wasm_proxies.js" rel="modulepreload" />
-    <link href="https://api.scryfall.com/" rel="preconnect" crossorigin="true" />
-    <link href="https://cards.scryfall.com/" rel="preconnect" crossorigin="true" />
+    <link href="pkg/wasm_proxies_bg.wasm" rel="preload" as="fetch" type="application/wasm" crossorigin="anonymous">
+    <link href="pkg/wasm_proxies.js" rel="modulepreload">
+    <link href="https://api.scryfall.com/" rel="preconnect" crossorigin="anonymous">
+    <link href="https://cards.scryfall.com/" rel="preconnect" crossorigin="anonymous">
 
-    <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
   </head>
 
   <body>
-    <script type="module" src="interface.js" blocking="render"></script>
+    <!-- Dummy script tag to prevent FOUC -->
+    <script>0</script>
+    
+    <script type="module" src="interface.js"></script>
 
-    <div id="options" class="options boxed">
-      <fieldset class="boxed">
-        <legend>Enter deck list</legend>
+    <div id="loading-overlay">
+      <span id="loader"></span>
+    </div>
 
-        <textarea id="deck-list" placeholder="Enter deck list here"></textarea>
-        <textarea id="old-deck-list" placeholder="Enter previous deck list here" style="display: none;"></textarea>
-        <input id="proxies-txt-button" type="button" value="Generate proxies">
-        <input id="proxies-file-select" type="file" accept="text/plain,application/json">
-        <input id="old-proxies-file-select" type="file" accept="text/plain,application/json" style="display: none;">
-        <input id="proxies-file-button" type="button" value="Generate proxies">
-      </fieldset>
-      
-      <fieldset class="boxed">
-        <legend>Proxy options</legend>
+    <div id="options">
+      <fieldset class="options boxed">
+        <legend>Options</legend>
 
-        <div>
-          <input type="checkbox" id="include-basic-lands" name="include-basic-lands" checked />
-          <label for="include-basic-lands">Include basic lands</label>
-        </div>
+        <fieldset class="boxed option-box">
+          <legend>Enter deck list</legend>
 
-        <div>
-          <input type="checkbox" id="include-tokens" name="include-tokens" checked />
-          <label for="include-tokens">Include associated tokens</label>
-        </div>
+          <fieldset class="boxed deck-entry-box">
+            <legend>Paste deck list</legend>
 
-        <div>
-          <input type="checkbox" id="deck-diff" name="deck-diff" />
-          <label for="deck-diff">Provide two deck lists and print only newly added cards</label>
-        </div>
+            <textarea id="deck-list" class="deck-entry-field" placeholder="Enter deck list here"></textarea>
+            <textarea id="old-deck-list" class="deck-entry-field" placeholder="Enter previous deck list here" style="display: none;"></textarea>
+            <input id="proxies-txt-button" class="option-button" type="button" value="Generate proxies">
+          </fieldset>
 
-        <fieldset class="boxed">
-          <legend>Image quality</legend>
-          <div>
-            <input type="radio" id="image-type-small-radio" name="image-type" value="small" />
-            <label for="image-type-small-radio">Small (lowest quality)</label>
-          </div>
+          <fieldset class="boxed deck-entry-box">
+            <legend>Deck list from file</legend>
 
-          <div>
-            <input type="radio" id="image-type-normal-radio" name="image-type" value="normal" />
-            <label for="image-type-normal-radio">Normal</label>
-          </div>
+            <input id="proxies-file-select" class="deck-entry-field file-upload" type="file" accept="text/plain,application/json">
+            <input id="old-proxies-file-select" class="deck-entry-field file-upload" type="file" accept="text/plain,application/json" style="display: none;">
+            <input id="proxies-file-button" class="option-button" type="button" value="Generate proxies">
+          </fieldset>
+        </fieldset>
+        
+        <fieldset class="boxed option-box">
+          <legend>Proxy options</legend>
 
-          <div>
-            <input type="radio" id="image-type-large-radio" name="image-type" value="large" />
-            <label for="image-type-large-radio">Large</label>
-          </div>
+          <fieldset class="boxed option-box-vertical">
+            <legend>Image quality</legend>
+            <div>
+              <input type="radio" id="image-type-small-radio" name="image-type" value="small" /><label for="image-type-small-radio">Small (lowest quality)</label>
+            </div>
 
-          <div>
-            <input type="radio" id="image-type-png-radio" name="image-type" value="png" checked />
-            <label for="image-type-png-radio">PNG (highest quality)</label>
-          </div>
+            <div>
+              <input type="radio" id="image-type-normal-radio" name="image-type" value="normal" /><label for="image-type-normal-radio">Normal</label>
+            </div>
 
-          <div>
-            <input type="radio" id="image-type-art-crop-radio" name="image-type" value="art-crop" />
-            <label for="image-type-art-crop-radio">Art crop</label>
-          </div>
+            <div>
+              <input type="radio" id="image-type-large-radio" name="image-type" value="large" /><label for="image-type-large-radio">Large</label>
+            </div>
 
-          <div>
-            <input type="radio" id="image-type-border-crop-radio" name="image-type" value="border-crop" />
-            <label for="image-type-border-crop-radio">Border crop</label>
+            <div>
+              <input type="radio" id="image-type-png-radio" name="image-type" value="png" checked /><label for="image-type-png-radio">PNG (highest quality)</label>
+            </div>
+
+            <div>
+              <input type="radio" id="image-type-art-crop-radio" name="image-type" value="art-crop" /><label for="image-type-art-crop-radio">Art crop</label>
+            </div>
+
+            <div>
+              <input type="radio" id="image-type-border-crop-radio" name="image-type" value="border-crop" /><label for="image-type-border-crop-radio">Border crop</label>
+            </div>
+          </fieldset>
+
+          <div class="option-box-vertical">
+            <div>
+              <input type="checkbox" id="include-basic-lands" name="include-basic-lands" checked /><label for="include-basic-lands">Include basic lands</label>
+            </div>
+
+            <div>
+              <input type="checkbox" id="include-tokens" name="include-tokens" checked /><label for="include-tokens">Include associated tokens</label>
+            </div>
+
+            <div>
+              <input type="checkbox" id="deck-diff" name="deck-diff" /><label for="deck-diff">Provide two deck lists and print only newly added cards</label>
+            </div>
+
+            <fieldset class="boxed option-box">
+              <legend>Add custom cards</legend>
+              
+              <input type="file" class="deck-entry-field file-upload" id="custom-cards-upload" name="custom-cards-upload" accept="image/*" multiple />
+              <input type="button" class="option-button" id="custom-cards-clear-upload" name="custom-cards-clear-upload" value="Clear selected files" />
+            </fieldset>
           </div>
         </fieldset>
-
-        <fieldset class="boxed">
-          <legend>Add custom cards</legend>
-
-          <div>
-            <input type="file" id="custom-cards-upload" name="custom-cards-upload" accept="image/*" multiple />
-            <label for="custom-cards-upload">Upload custom cards</label>
-            <input type="button" id="custom-cards-clear-upload" name="custom-cards-clear-upload" value="Clear selected files" />
-          </div>
-        </fieldset>
       </fieldset>
+
+      <hr class="optionsDivider">
     </div>
     
-    <div id="proxies" class="proxies boxed"></div>
+    <div id="proxies"></div>
   </body>
 </html>

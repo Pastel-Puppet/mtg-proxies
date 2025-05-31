@@ -150,7 +150,7 @@ async fn add_proxy_images_from_deck_list(mut user_options: UserOptions, document
     proxies_section.set_text_content(None);
 
     for extra_card in user_options.extra_cards {
-        card_images.push(Url::from_str(&extra_card).map_err(rust_error_to_js)?)
+        card_images.push(Url::from_str(&extra_card).map_err(rust_error_to_js)?);
     }
     
     for card_image in card_images {

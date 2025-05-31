@@ -7,8 +7,152 @@
     border-style: groove;
     border-width: 2px;
     border-color: rgb(233, 233, 237);
+    border-radius: 10px;
 }
 
-.proxies {
+.deck-entry-box {
+    display: flex;
+    flex: 1 1 0;
+}
+
+.option-box {
+    display: flex;
+    flex: 1 1 0;
+    align-items: stretch;
+    flex-direction: row;
+}
+
+.option-box-vertical {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+}
+
+#proxies {
     font-size: 0;
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: center;
+}
+
+.options {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+    margin: auto 8px;
+}
+
+.option-button {
+    flex: 0 0 auto;
+    align-self: center;
+    margin: 5px;
+}
+
+.deck-entry-field {
+    flex: 4 1 auto;
+    margin: 5px;
+}
+
+#options {
+    background-color: white;
+    inset: 0 0;
+    position: sticky;
+    margin-bottom: 8px;
+}
+
+body {
+    margin-top: 0;
+    margin-left: 0;
+    margin-right: 0;
+    margin-bottom: 8px;
+}
+
+.options-divider {
+    margin-bottom: 0;
+    border-bottom-width: 2px;
+    border-bottom-color: black;
+    border-bottom-style: solid;
+}
+
+.file-upload {
+    border-style: dashed;
+    border-width: 2px;
+    border-color: black;
+}
+
+#loading-overlay {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1;
+}
+
+/* From cssloaders.github.io */
+#loader {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    display: block;
+    color: #fff;
+    font-size: 10px;
+    width: 1em;
+    height: 1em;
+    border-radius: 50%;
+    position: relative;
+    text-indent: -9999em;
+    animation: mulShdSpin 1.3s infinite linear;
+    transform: translateZ(0);
+}
+
+@keyframes mulShdSpin {
+    0%,
+    100% {
+        box-shadow: 0 -3em 0 0.2em, 
+        2em -2em 0 0em, 3em 0 0 -1em, 
+        2em 2em 0 -1em, 0 3em 0 -1em, 
+        -2em 2em 0 -1em, -3em 0 0 -1em, 
+        -2em -2em 0 0;
+    }
+    12.5% {
+        box-shadow: 0 -3em 0 0, 2em -2em 0 0.2em, 
+        3em 0 0 0, 2em 2em 0 -1em, 0 3em 0 -1em, 
+        -2em 2em 0 -1em, -3em 0 0 -1em, 
+        -2em -2em 0 -1em;
+    }
+    25% {
+        box-shadow: 0 -3em 0 -0.5em, 
+        2em -2em 0 0, 3em 0 0 0.2em, 
+        2em 2em 0 0, 0 3em 0 -1em, 
+        -2em 2em 0 -1em, -3em 0 0 -1em, 
+        -2em -2em 0 -1em;
+    }
+    37.5% {
+        box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em,
+        3em 0em 0 0, 2em 2em 0 0.2em, 0 3em 0 0em, 
+        -2em 2em 0 -1em, -3em 0em 0 -1em, -2em -2em 0 -1em;
+    }
+    50% {
+        box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em,
+        3em 0 0 -1em, 2em 2em 0 0em, 0 3em 0 0.2em, 
+        -2em 2em 0 0, -3em 0em 0 -1em, -2em -2em 0 -1em;
+    }
+    62.5% {
+        box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em,
+        3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 0, 
+        -2em 2em 0 0.2em, -3em 0 0 0, -2em -2em 0 -1em;
+    }
+    75% {
+        box-shadow: 0em -3em 0 -1em, 2em -2em 0 -1em, 
+        3em 0em 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, 
+        -2em 2em 0 0, -3em 0em 0 0.2em, -2em -2em 0 0;
+    }
+    87.5% {
+        box-shadow: 0em -3em 0 0, 2em -2em 0 -1em, 
+        3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, 
+        -2em 2em 0 0, -3em 0em 0 0, -2em -2em 0 0.2em;
+    }
 }

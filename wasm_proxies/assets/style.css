@@ -62,8 +62,12 @@
     padding: 10px;
 }
 
+textarea.deck-entry-field {
+    background-color: #F6F1F9;
+}
+
 #options {
-    background-color: white;
+    background-color: #F6F1F9;
     inset: 0 0;
     position: sticky;
     padding-top: 0.5%;
@@ -165,6 +169,7 @@ input[type='checkbox'] {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
+    row-gap: 10px;
 }
 
 #flex-padding-left, #flex-padding-right {
@@ -210,10 +215,6 @@ html {
 
     #proxy-options {
         margin: 0;
-    }
-
-    #options-wrapper {
-        row-gap: 10px;
     }
 }
 

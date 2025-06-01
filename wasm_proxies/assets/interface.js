@@ -83,10 +83,10 @@ function proxiesFileButtonClicked() {
     }
 }
 
-function clearUploadedCustomCardsClicked() {
+function clearUploadedCustomCardsClicked(update_file_selection_text_callback) {
     const custom_cards_upload = document.getElementById("custom-cards-upload");
     custom_cards_upload.value = null;
-    updateFileSelectionText("custom-cards-upload");
+    update_file_selection_text_callback();
 }
 
 function toggleDeckDiff() {
@@ -141,8 +141,6 @@ document.getElementById("proxies-file-button").addEventListener("click", proxies
 document.getElementById("proxies-txt-print-button").addEventListener("click", () => window.print());
 document.getElementById("proxies-file-print-button").addEventListener("click", () => window.print());
 
-document.getElementById("custom-cards-clear-upload").addEventListener("click", clearUploadedCustomCardsClicked);
-
 document.getElementById("deck-diff").addEventListener("change", toggleDeckDiff);
 
 document.getElementById("proxies-file-select-wrapper").addEventListener("click", () => document.getElementById("proxies-file-select").click());
@@ -169,6 +167,8 @@ const custom_cards_upload_callback = () => updateFileSelectionText(
     "No custom cards selected"
 );
 document.getElementById("custom-cards-upload").addEventListener("change", custom_cards_upload_callback);
+
+document.getElementById("custom-cards-clear-upload").addEventListener("click", () => clearUploadedCustomCardsClicked(custom_cards_upload_callback));
 
 proxies_file_select_callback();
 old_proxies_file_select_callback();

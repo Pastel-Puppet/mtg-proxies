@@ -1,8 +1,10 @@
-use std::{collections::HashMap, hash::Hash};
+use std::{cmp::Ordering, collections::HashMap, hash::Hash};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use url::Url;
 use uuid::Uuid;
+
+use crate::token_handling::Token;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "object")]
@@ -208,13 +210,22 @@ impl PartialEq for Card {
 impl Eq for Card {}
 
 impl PartialOrd for Card {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl Ord for Card {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
+        let is_self_token = self.is_token();
+        let is_other_token = other.is_token();
+
+        if is_self_token && !is_other_token {
+            return Ordering::Greater;
+        } else if !is_self_token && is_other_token {
+            return Ordering::Less;
+        }
+
         self.name.cmp(&other.name)
     }
 }

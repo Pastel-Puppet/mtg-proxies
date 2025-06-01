@@ -126,6 +126,24 @@ body {
     border-color: #A46EC4;
 }
 
+.clickable:disabled {
+    cursor: not-allowed;
+    background-color: #E4D4ED;
+    border-color: #C9A8DC;
+}
+
+.clickable:hover:disabled {
+    cursor: not-allowed;
+    background-color: #E4D4ED;
+    border-color: #C9A8DC;
+}
+
+.clickable:active:disabled {
+    cursor: not-allowed;
+    background-color: #E4D4ED;
+    border-color: #C9A8DC;
+}
+
 .active {
     background-color: #A46EC4;
     pointer-events: none;
@@ -159,6 +177,11 @@ input[type='checkbox'] {
 
 html {
     scrollbar-gutter: stable;
+}
+
+.button-wrapper {
+  display: inline-flex;
+  flex-direction: column;
 }
 
 #loading-overlay {

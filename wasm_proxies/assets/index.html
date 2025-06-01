@@ -90,7 +90,10 @@
           <div id="deck-paste-controls" class="boxed deck-entry-box">
             <textarea id="deck-list" class="deck-entry-field" placeholder="Enter deck list here"></textarea>
             <textarea id="old-deck-list" class="deck-entry-field" placeholder="Enter previous deck list here" style="display: none;"></textarea>
-            <button id="proxies-txt-button" class="option-button clickable">Generate proxies</button>
+            <div class="button-wrapper">
+              <button id="proxies-txt-button" class="option-button clickable">Generate proxies</button>
+              <button id="proxies-txt-print-button" class="option-button clickable" disabled autocomplete="off">Print generated proxies</button>
+            </div>
           </div>
 
           <div id="deck-file-controls" class="boxed deck-entry-box" style="display: none;">
@@ -102,7 +105,10 @@
               <input id="old-proxies-file-select" class="file-upload-handler" type="file" accept="text/plain,application/json">
               <p id="old-proxies-file-select-text" class="file-upload-text"></p>
             </div>
-            <button id="proxies-file-button" class="option-button clickable">Generate proxies</button>
+            <div class="button-wrapper">
+              <button id="proxies-file-button" class="option-button clickable">Generate proxies</button>
+              <button id="proxies-file-print-button" class="option-button clickable" disabled autocomplete="off">Print generated proxies</button>
+            </div>
           </div>
         </fieldset>
 

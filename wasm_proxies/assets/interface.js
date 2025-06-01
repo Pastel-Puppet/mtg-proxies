@@ -19,6 +19,9 @@ function getCustomCards() {
 async function proxiesTxtButtonClicked() {
     document.getElementById("loading-overlay").style.display = "block";
     await generate_proxies_from_textbox(getCustomCards(), document.getElementById("deck-diff").checked)
+        .then(() => {
+            updatePrintButton();
+        })
         .catch((error) => {
             window.alert(error);
         })
@@ -41,6 +44,9 @@ function proxiesFileButtonClicked() {
                     const old_reader = new FileReader();
                     old_reader.onload = async () => {
                         await generate_proxies_from_file_contents(reader.result, file.type, old_reader.result, old_file.type, getCustomCards())
+                            .then(() => {
+                                updatePrintButton();
+                            })
                             .catch((error) => {
                                 window.alert(error);
                             })
@@ -52,6 +58,9 @@ function proxiesFileButtonClicked() {
                 }
             } else {
                 await generate_proxies_from_file_contents(reader.result, file.type, null, null, getCustomCards())
+                    .then(() => {
+                        updatePrintButton();
+                    })
                     .catch((error) => {
                         window.alert(error);
                     })
@@ -113,11 +122,24 @@ function switchDeckControlsTab(selected, other, selected_controls, other_control
     selected_controls.style.display = "";
 }
 
+function updatePrintButton() {
+    if (document.getElementById("proxies").hasChildNodes()) {
+        document.getElementById("proxies-txt-print-button").disabled = false;
+        document.getElementById("proxies-file-print-button").disabled = false;
+    } else {
+        document.getElementById("proxies-txt-print-button").disabled = true;
+        document.getElementById("proxies-file-print-button").disabled = true;
+    }
+}
+
 toggleDeckDiff();
 await init();
 
 document.getElementById("proxies-txt-button").addEventListener("click", proxiesTxtButtonClicked);
 document.getElementById("proxies-file-button").addEventListener("click", proxiesFileButtonClicked);
+
+document.getElementById("proxies-txt-print-button").addEventListener("click", () => window.print());
+document.getElementById("proxies-file-print-button").addEventListener("click", () => window.print());
 
 document.getElementById("custom-cards-clear-upload").addEventListener("click", clearUploadedCustomCardsClicked);
 

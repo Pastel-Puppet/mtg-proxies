@@ -1,16 +1,36 @@
-use crate::api_classes::RelatedCard;
+use crate::api_classes::{Card, RelatedCard};
 
-pub fn is_token(card: &RelatedCard) -> bool {
-    if card.component == "token" {
-        return true;
+pub trait Token {
+    fn is_token(self: &Self) -> bool;
+}
+
+impl Token for Card {
+    fn is_token(self: &Self) -> bool {
+        let Some(type_line) = &self.type_line else {
+            return false;
+        };
+
+        is_typeline_or_name_token(type_line, &self.name)
     }
+}
 
+impl Token for RelatedCard {
+    fn is_token(self: &Self) -> bool {
+        if self.component == "token" {
+            return true;
+        }
+
+        is_typeline_or_name_token(&self.type_line, &self.name)
+    }
+}
+
+fn is_typeline_or_name_token(type_line: &String, name: &String) -> bool {
     let token_types = ["token", "emblem", "card"];
 
-    for word in card.type_line.split_ascii_whitespace() {
+    for word in type_line.split_ascii_whitespace() {
         for token_type in token_types {
             if word.to_ascii_lowercase().contains(token_type) {
-                if token_type == "card" && card.name.to_ascii_lowercase().contains("checklist") {
+                if token_type == "card" && name.to_ascii_lowercase().contains("checklist") {
                     continue;
                 }
 

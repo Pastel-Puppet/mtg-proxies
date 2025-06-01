@@ -2,7 +2,7 @@ use std::{collections::HashMap, error::Error, fmt::Display, hash::RandomState};
 
 use log::warn;
 
-use crate::{api_classes::{ApiObject, Card, CardNotFound}, api_interface::{ApiInterface, RequestClient}, collection_card_identifier::CollectionCardIdentifier, token_handling::is_token};
+use crate::{api_classes::{ApiObject, Card, CardNotFound}, api_interface::{ApiInterface, RequestClient}, collection_card_identifier::CollectionCardIdentifier, token_handling::Token};
 
 #[derive(Debug, Clone)]
 enum CardParseErrorCause {
@@ -150,7 +150,7 @@ pub async fn resolve_cards<Client: RequestClient>(card_map: &mut HashMap<Collect
                     if fetch_related_tokens {
                         if let Some(related_cards) = &card.all_parts {
                             for related_card in related_cards {
-                                if is_token(related_card) {
+                                if related_card.is_token() {
                                     related_tokens.insert(CollectionCardIdentifier::Id(related_card.id), 1);
                                 }
                             }

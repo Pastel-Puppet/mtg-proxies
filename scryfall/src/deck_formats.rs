@@ -95,7 +95,7 @@ pub fn parse_json_file(file: &File) -> Result<HashMap<CollectionCardIdentifier, 
 
 pub fn parse_json_data(json_data: &str) -> Result<HashMap<CollectionCardIdentifier, usize>, Box<dyn Error>> {
     let mut card_map = HashMap::new();
-    let deck: Deck = from_str(&json_data)?;
+    let deck: Deck = from_str(json_data)?;
 
     for (section_name, deck_section) in deck.entries.iter() {
         if section_name == "maybeboard" {

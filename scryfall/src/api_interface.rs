@@ -75,7 +75,7 @@ impl<Client> ApiInterface<Client>
         Ok(Self {
             http_client: Client::build()?,
             api_endpoint: url!("https://api.scryfall.com/"),
-            rate_limiter: RateLimiter::direct(Quota::per_second(nonzero!(10 as u32))),
+            rate_limiter: RateLimiter::direct(Quota::per_second(nonzero!(10_u32))),
         })
     }
 

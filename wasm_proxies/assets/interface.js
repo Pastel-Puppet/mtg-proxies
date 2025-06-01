@@ -23,6 +23,7 @@ async function proxiesTxtButtonClicked() {
             updatePrintButton();
         })
         .catch((error) => {
+            console.error(error);
             window.alert(error);
         })
         .finally(() => {
@@ -48,6 +49,7 @@ function proxiesFileButtonClicked() {
                                 updatePrintButton();
                             })
                             .catch((error) => {
+                                console.error(error);
                                 window.alert(error);
                             })
                             .finally(() => {
@@ -62,6 +64,7 @@ function proxiesFileButtonClicked() {
                         updatePrintButton();
                     })
                     .catch((error) => {
+                        console.error(error);
                         window.alert(error);
                     })
                     .finally(() => {

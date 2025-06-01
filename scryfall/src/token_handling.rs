@@ -1,11 +1,11 @@
 use crate::api_classes::{Card, RelatedCard};
 
 pub trait Token {
-    fn is_token(self: &Self) -> bool;
+    fn is_token(&self) -> bool;
 }
 
 impl Token for Card {
-    fn is_token(self: &Self) -> bool {
+    fn is_token(&self) -> bool {
         let Some(type_line) = &self.type_line else {
             return false;
         };
@@ -15,7 +15,7 @@ impl Token for Card {
 }
 
 impl Token for RelatedCard {
-    fn is_token(self: &Self) -> bool {
+    fn is_token(&self) -> bool {
         if self.component == "token" {
             return true;
         }
@@ -24,7 +24,7 @@ impl Token for RelatedCard {
     }
 }
 
-fn is_typeline_or_name_token(type_line: &String, name: &String) -> bool {
+fn is_typeline_or_name_token(type_line: &str, name: &str) -> bool {
     let token_types = ["token", "emblem", "card"];
 
     for word in type_line.split_ascii_whitespace() {

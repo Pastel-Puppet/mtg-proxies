@@ -4,27 +4,27 @@
 }
 
 .boxed {
-    border-style: groove;
+    border-style: solid;
     border-width: 2px;
-    border-color: rgb(233, 233, 237);
+    border-color: #A46EC4;
     border-radius: 10px;
 }
 
 .deck-entry-box {
     display: flex;
-    flex: 1 1 0;
+    flex: 0 1 0;
 }
 
 .option-box {
-    display: flex;
-    flex: 1 1 0;
+    display: inline-flex;
     align-items: stretch;
     flex-direction: row;
+    text-align: start;
 }
 
 .option-box-vertical {
     display: flex;
-    flex: 1 1 0;
+    flex: 0 1 0;
     flex-direction: column;
 }
 
@@ -41,26 +41,32 @@
     align-items: stretch;
     gap: 10px;
     padding: 10px;
-    margin-bottom: 10px;
     margin: auto 8px;
+    margin-bottom: 10px;
 }
 
 .option-button {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
     align-self: center;
     margin: 5px;
+    border-style: solid;
+    border-radius: 50%;
+    width: 90px;
+    height: 90px;
 }
 
 .deck-entry-field {
-    flex: 4 1 auto;
+    flex: 0 1 auto;
+    width: 300px;
     margin: 5px;
+    padding: 10px;
 }
 
 #options {
     background-color: white;
     inset: 0 0;
     position: sticky;
-    margin-bottom: 8px;
+    padding-top: 0.5%;
 }
 
 body {
@@ -81,6 +87,78 @@ body {
     border-style: dashed;
     border-width: 2px;
     border-color: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.file-upload-handler {
+    display: none;
+}
+
+.file-upload-text {
+    min-height: 18px;
+}
+
+.deck-specifier-select {
+    padding: 0 3px;
+    user-select: none;
+}
+
+#deck-specifier-select-wrapper {
+    display: flex;
+    justify-content: space-between;
+    gap: 5px;
+}
+
+.clickable {
+    background-color: #E4D4ED;
+    border-color: #C9A8DC;
+}
+
+.clickable:hover {
+    background-color: #C9A8DC;
+    border-color: #A46EC4;
+}
+
+.clickable:active {
+    background-color: #A46EC4;
+    border-color: #A46EC4;
+}
+
+.active {
+    background-color: #A46EC4;
+    pointer-events: none;
+}
+
+input[type='radio'] {
+    accent-color: #A46EC4;
+}
+
+input[type='checkbox'] {
+    accent-color: #A46EC4;
+}
+
+.list-option {
+    text-wrap: nowrap;
+}
+
+#options-wrapper {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.flex-padding {
+    flex: 1;
+}
+
+#proxy-options {
+    margin-left: 2svw;
+}
+
+html {
+    scrollbar-gutter: stable;
 }
 
 #loading-overlay {

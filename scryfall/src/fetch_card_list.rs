@@ -118,6 +118,10 @@ async fn fuzzy_resolve<Client: RequestClient>(card_map: &mut HashMap<CollectionC
 }
 
 pub async fn resolve_cards<Client: RequestClient>(card_map: &mut HashMap<CollectionCardIdentifier, usize>, fetch_related_tokens: bool, api_interface: &mut ApiInterface<Client>) -> Result<Vec<ResolvedCard>, Box<dyn Error>> {
+    if card_map.is_empty() {
+        return Ok(Vec::new());
+    }
+
     let mut not_found_cards_list: Vec<CardNotFound> = Vec::new();
     let mut resolved_cards: Vec<ResolvedCard> = Vec::new();
     let unresolved_cards: Vec<&CollectionCardIdentifier> = card_map.keys().collect();

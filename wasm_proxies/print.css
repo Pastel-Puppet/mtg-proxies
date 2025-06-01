@@ -8,15 +8,20 @@ body {
     padding: 0;
 }
 
-.options {
+#options {
+    display: none;
+}
+
+#loading-overlay {
     display: none;
 }
 
 .card {
     width: 63mm;
     height: 88mm;
+    margin: 0;
 }
 
-.proxies {
+#proxies {
     font-size: 0;
 }

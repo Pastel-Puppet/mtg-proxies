@@ -167,8 +167,9 @@ input[type='checkbox'] {
     flex-wrap: wrap;
 }
 
-.flex-padding {
+#flex-padding-left, #flex-padding-right {
     flex: 1;
+    display: flex;
 }
 
 #proxy-options {
@@ -184,12 +185,36 @@ html {
   flex-direction: column;
 }
 
+#custom-cards-upload-fieldset {
+    flex: 1 0 auto;
+}
+
 #loading-overlay {
     position: fixed;
     width: 100%;
     height: 100%;
     background-color: rgba(0,0,0,0.5);
     z-index: 1;
+}
+
+@media only screen and (max-width: 2100px) {
+    #flex-padding-right {
+        display: none;
+    }
+}
+
+@media only screen and (max-width: 1600px) {
+    #flex-padding-left {
+        flex: 0;
+    }
+
+    #proxy-options {
+        margin: 0;
+    }
+
+    #options-wrapper {
+        row-gap: 10px;
+    }
 }
 
 /* From cssloaders.github.io */

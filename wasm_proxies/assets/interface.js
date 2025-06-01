@@ -146,7 +146,7 @@ const custom_cards_upload_callback = () => updateFileSelectionText(
     document.getElementById("custom-cards-upload-text"),
     "No custom cards selected"
 );
-document.getElementById("custom-cards-upload").addEventListener("change", custom_cards_upload_callback());
+document.getElementById("custom-cards-upload").addEventListener("change", custom_cards_upload_callback);
 
 proxies_file_select_callback();
 old_proxies_file_select_callback();

@@ -135,6 +135,22 @@ function updatePrintButton() {
     }
 }
 
+function showSupportedFormats() {
+    let formats_text = "" +
+    "Formats that have specific printings generate proxies that are exactly the card printings specified in the deck list.\n" +
+    "\nFormats that do not have specific printings generate proxies using default printings for every card.\n" +
+    "\nStandard text-based deck list formats from other deck builders should also be compatible.\n" +
+    "\nScryfall formats:\n" +
+    "Text\n" +
+    "JSON (has specific printings)\n" +
+    "\nDeckStats formats:\n" +
+    ".dec\n" +
+    "MTG Arena (has specific printings)\n" +
+    "MTG Online\n" +
+    "Text";
+    window.alert(formats_text);
+}
+
 toggleDeckDiff();
 await init();
 
@@ -189,5 +205,7 @@ document.getElementById("deck-file-option").addEventListener("click", (event) =>
     document.getElementById("deck-file-controls"),
     document.getElementById("deck-paste-controls")
 ));
+
+document.getElementById("supported-formats-button").addEventListener("click", showSupportedFormats);
 
 document.getElementById("loading-overlay").style.display = "none";

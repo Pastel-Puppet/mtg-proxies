@@ -56,12 +56,6 @@ fn get_count_for_card(card_map: &HashMap<CollectionCardIdentifier, usize>, card:
     if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::Id(card.id), false) {
         return Some(count)
     };
-    if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::Name(card.name.clone()), true) {
-        return Some(count)
-    };
-    if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::NameSet((card.name.clone(), card.set.clone())), true) {
-        return Some(count)
-    };
     if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::CollectorNumberSet((card.collector_number.clone(), card.set.clone())), false) {
         return Some(count)
     };
@@ -87,6 +81,12 @@ fn get_count_for_card(card_map: &HashMap<CollectionCardIdentifier, usize>, card:
             return Some(count)
         };
     }
+    if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::NameSet((card.name.clone(), card.set.clone())), false) {
+        return Some(count)
+    };
+    if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::Name(card.name.clone()), true) {
+        return Some(count)
+    };
     None
 }
 

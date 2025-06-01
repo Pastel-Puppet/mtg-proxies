@@ -139,7 +139,13 @@ async fn add_proxy_images_from_deck_list(mut user_options: UserOptions, document
 
         deck_diff(old_deck_cards, deck_cards).added
     } else {
-        deck_cards.into_iter().map(|card| card.card).collect()
+        deck_cards.into_iter().flat_map(|card| {
+            let mut cards = Vec::new();
+            for _ in 0..card.count {
+                cards.push(card.card.clone());
+            }
+            cards
+        }).collect()
     };
 
     cards_to_display.sort();
@@ -232,7 +238,7 @@ pub async fn generate_proxies_from_file_contents(file_contents: JsValue, file_mi
     };
 
     let deck_list = match file_type.as_str() {
-        "text/plain" => parse_txt_data(&contents).map_err(rust_error_to_js)?,
+        "text/plain" | "" => parse_txt_data(&contents).map_err(rust_error_to_js)?,
         "application/json" => parse_json_data(&contents).map_err(rust_error_to_js)?,
         _ => return Err(format!("Unsupported MIME type {}", file_type).into()),
     };
@@ -248,7 +254,7 @@ pub async fn generate_proxies_from_file_contents(file_contents: JsValue, file_mi
         };
 
         Some(match old_file_type.as_str() {
-            "text/plain" => parse_txt_data(&old_contents).map_err(rust_error_to_js)?,
+            "text/plain" | "" => parse_txt_data(&old_contents).map_err(rust_error_to_js)?,
             "application/json" => parse_json_data(&old_contents).map_err(rust_error_to_js)?,
             _ => return Err(format!("Unsupported MIME type {}", old_file_type).into()),
         })

@@ -36,22 +36,37 @@ pub fn deck_diff(old_deck: Vec<ResolvedCard>, new_deck: Vec<ResolvedCard>) -> De
 
 fn parse_card_name(name: &str) -> CollectionCardIdentifier {
     let name = name.trim();
-    if name.starts_with("[") && name.ends_with("]") {
-        let name = name.trim_start_matches("[").trim_end_matches("]");
-        if let Some((set, collector_number)) = name.split_once("/") {
-            CollectionCardIdentifier::CollectorNumberSet((collector_number.to_string(), set.to_string()))
-        } else {
-            CollectionCardIdentifier::Name(name.to_string())
-        }
-    } else {
-        CollectionCardIdentifier::Name(name.to_string())
-    }
+    CollectionCardIdentifier::Name(name.to_string())
+}
+
+fn try_parse_line_as_mtg_arena(line: &str) -> Option<(CollectionCardIdentifier, usize)> {
+    let mut line_split = line.rsplit(" ");
+
+    let collector_number_string = line_split.next()?;
+    if let Err(_) = collector_number_string.parse::<usize>() {
+        return None;
+    };
+    let set_identifier = line_split.next()?.strip_prefix("(")?.strip_suffix(")")?;
+    let Ok(card_count) = line_split.last()?.parse::<usize>() else {
+        return Some((CollectionCardIdentifier::CollectorNumberSet((collector_number_string.to_string(), set_identifier.to_ascii_lowercase())), 1));
+    };
+
+    Some((CollectionCardIdentifier::CollectorNumberSet((collector_number_string.to_string(), set_identifier.to_ascii_lowercase())), card_count))
 }
 
 fn parse_txt_line(line: String) -> Option<(CollectionCardIdentifier, usize)> {
-    let text = line.trim();
-    if text.is_empty() || text.starts_with("//") {
+    let mut text = line.trim();
+    if text.is_empty() || text.starts_with("//") || text.starts_with("Main") || text.starts_with("Commander") {
         return None
+    }
+
+    text = match text.split_once(" #") {
+        None => text,
+        Some((main_text, _comment)) => main_text,
+    };
+
+    if let Some(identifier) = try_parse_line_as_mtg_arena(text) {
+        return Some(identifier);
     }
 
     match text.split_once(" ") {

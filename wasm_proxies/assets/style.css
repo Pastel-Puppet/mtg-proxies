@@ -202,6 +202,11 @@ html {
     z-index: 1;
 }
 
+#supported-formats-button {
+    flex: 1 0 auto;
+    margin-bottom: 10px;
+}
+
 @media only screen and (max-width: 2100px) {
     #flex-padding-right {
         display: none;

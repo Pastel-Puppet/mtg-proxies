@@ -31,32 +31,35 @@
           <fieldset id="proxy-options" class="boxed option-box">
             <legend>Options</legend>
 
-            <fieldset class="boxed option-box-vertical">
-              <legend>Image quality</legend>
-              <div class="list-option">
-                <input type="radio" id="image-type-small-radio" name="image-type" value="small" class="clickable"><label for="image-type-small-radio" class="list-option">Small (lowest quality)</label>
-              </div>
+            <div class="option-box-vertical">
+              <button id="supported-formats-button" class="boxed clickable">View supported formats</button>
+              <fieldset class="boxed option-box-vertical">
+                <legend>Image quality</legend>
+                <div class="list-option">
+                  <input type="radio" id="image-type-small-radio" name="image-type" value="small" class="clickable"><label for="image-type-small-radio" class="list-option">Small (lowest quality)</label>
+                </div>
 
-              <div class="list-option">
-                <input type="radio" id="image-type-normal-radio" name="image-type" value="normal" class="clickable"><label for="image-type-normal-radio" class="list-option">Normal</label>
-              </div>
+                <div class="list-option">
+                  <input type="radio" id="image-type-normal-radio" name="image-type" value="normal" class="clickable"><label for="image-type-normal-radio" class="list-option">Normal</label>
+                </div>
 
-              <div class="list-option">
-                <input type="radio" id="image-type-large-radio" name="image-type" value="large" class="clickable"><label for="image-type-large-radio" class="list-option">Large</label>
-              </div>
+                <div class="list-option">
+                  <input type="radio" id="image-type-large-radio" name="image-type" value="large" class="clickable"><label for="image-type-large-radio" class="list-option">Large</label>
+                </div>
 
-              <div class="list-option">
-                <input type="radio" id="image-type-png-radio" name="image-type" value="png" class="clickable" checked><label for="image-type-png-radio" class="list-option">PNG (highest quality)</label>
-              </div>
+                <div class="list-option">
+                  <input type="radio" id="image-type-png-radio" name="image-type" value="png" class="clickable" checked><label for="image-type-png-radio" class="list-option">PNG (highest quality)</label>
+                </div>
 
-              <div class="list-option">
-                <input type="radio" id="image-type-art-crop-radio" name="image-type" value="art-crop" class="clickable"><label for="image-type-art-crop-radio" class="list-option">Art crop</label>
-              </div>
+                <div class="list-option">
+                  <input type="radio" id="image-type-art-crop-radio" name="image-type" value="art-crop" class="clickable"><label for="image-type-art-crop-radio" class="list-option">Art crop</label>
+                </div>
 
-              <div class="list-option">
-                <input type="radio" id="image-type-border-crop-radio" name="image-type" value="border-crop" class="clickable"><label for="image-type-border-crop-radio" class="list-option">Border crop</label>
-              </div>
-            </fieldset>
+                <div class="list-option">
+                  <input type="radio" id="image-type-border-crop-radio" name="image-type" value="border-crop" class="clickable"><label for="image-type-border-crop-radio" class="list-option">Border crop</label>
+                </div>
+              </fieldset>
+            </div>
 
             <div class="option-box-vertical">
               <div class="list-option">
@@ -98,11 +101,11 @@
 
           <div id="deck-file-controls" class="boxed deck-entry-box" style="display: none;">
             <div id="proxies-file-select-wrapper" class="deck-entry-field file-upload clickable">
-              <input id="proxies-file-select" class="file-upload-handler" type="file" accept="text/plain,application/json">
+              <input id="proxies-file-select" class="file-upload-handler" type="file" accept="text/plain,application/json,.dec">
               <p id="proxies-file-select-text" class="file-upload-text"></p>
             </div>
             <div id="old-proxies-file-select-wrapper" class="deck-entry-field file-upload clickable" style="display: none;">
-              <input id="old-proxies-file-select" class="file-upload-handler" type="file" accept="text/plain,application/json">
+              <input id="old-proxies-file-select" class="file-upload-handler" type="file" accept="text/plain,application/json,.dec">
               <p id="old-proxies-file-select-text" class="file-upload-text"></p>
             </div>
             <div class="button-wrapper">

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, error::Error, str::FromStr};
+use std::{collections::HashMap, fmt::Display, str::FromStr};
 use log::{error, Level};
 use url::Url;
 use wasm_bindgen::prelude::*;
@@ -30,10 +30,9 @@ struct UserOptions {
 }
 
 fn rust_error_to_js<T>(error: T) -> JsValue
-    where T: Into<Box<dyn Error>> {
-    let boxed_error = error.into();
-    error!("{}", boxed_error);
-    JsValue::from_str(&boxed_error.to_string())
+    where T: Display {
+    error!("{}", error);
+    JsValue::from_str(&error.to_string())
 }
 
 fn get_selected_image_type(document: &Document) -> Result<ImageUriType, JsValue> {

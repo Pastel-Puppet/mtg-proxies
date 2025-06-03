@@ -2,9 +2,9 @@ use std::{collections::HashMap, fmt::Display, str::FromStr};
 use log::{error, Level};
 use url::Url;
 use wasm_bindgen::prelude::*;
-use web_sys::{js_sys::Array, window, Document, HtmlDivElement, HtmlImageElement, HtmlInputElement, HtmlTextAreaElement};
+use web_sys::{js_sys::{Array, Function, JsString}, window, Document, HtmlDivElement, HtmlImageElement, HtmlInputElement, HtmlTextAreaElement};
 
-use scryfall::{api_interface::ApiInterface, card_images_helper::{extract_images, ImageUriType}, collection_card_identifier::CollectionCardIdentifier, deck_formats::{deck_diff, parse_json_data, parse_txt_data}, fetch_card_list::resolve_cards, reqwest_wrapper::ReqwestWrapper};
+use scryfall::{api_classes::Card, api_interface::ApiInterface, card_images_helper::{extract_images, ImageUriType}, collection_card_identifier::CollectionCardIdentifier, deck_formats::{deck_diff, parse_json_data, parse_txt_data}, fetch_card_list::resolve_cards, reqwest_wrapper::ReqwestWrapper};
 
 const DECK_LIST_TEXTBOX_ID: &str = "deck-list";
 const OLD_DECK_LIST_TEXTBOX_ID: &str = "old-deck-list";
@@ -38,7 +38,7 @@ fn rust_error_to_js<T>(error: T) -> JsValue
 fn get_selected_image_type(document: &Document) -> Result<ImageUriType, JsValue> {
     let image_type_small_radio = match document.get_element_by_id(IMAGE_TYPE_SMALL_RADIO) {
         Some(image_type_small_radio) => image_type_small_radio.dyn_into::<HtmlInputElement>()?,
-        None => return Err("Could not retrieve include image type small radio element".into()),
+        None => return Err("Could not find include image type small radio element".into()),
     };
 
     if image_type_small_radio.checked() {
@@ -47,7 +47,7 @@ fn get_selected_image_type(document: &Document) -> Result<ImageUriType, JsValue>
 
     let image_type_normal_radio = match document.get_element_by_id(IMAGE_TYPE_NORMAL_RADIO) {
         Some(image_type_normal_radio) => image_type_normal_radio.dyn_into::<HtmlInputElement>()?,
-        None => return Err("Could not retrieve include image type normal radio element".into()),
+        None => return Err("Could not find include image type normal radio element".into()),
     };
 
     if image_type_normal_radio.checked() {
@@ -65,7 +65,7 @@ fn get_selected_image_type(document: &Document) -> Result<ImageUriType, JsValue>
 
     let image_type_png_radio = match document.get_element_by_id(IMAGE_TYPE_PNG_RADIO) {
         Some(image_type_png_radio) => image_type_png_radio.dyn_into::<HtmlInputElement>()?,
-        None => return Err("Could not retrieve include image type png radio element".into()),
+        None => return Err("Could not find include image type png radio element".into()),
     };
 
     if image_type_png_radio.checked() {
@@ -74,7 +74,7 @@ fn get_selected_image_type(document: &Document) -> Result<ImageUriType, JsValue>
 
     let image_type_art_crop_radio = match document.get_element_by_id(IMAGE_TYPE_ART_CROP_RADIO) {
         Some(image_type_art_crop_radio) => image_type_art_crop_radio.dyn_into::<HtmlInputElement>()?,
-        None => return Err("Could not retrieve include image type art crop radio element".into()),
+        None => return Err("Could not find include image type art crop radio element".into()),
     };
 
     if image_type_art_crop_radio.checked() {
@@ -83,7 +83,7 @@ fn get_selected_image_type(document: &Document) -> Result<ImageUriType, JsValue>
 
     let image_type_border_crop_radio = match document.get_element_by_id(IMAGE_TYPE_BORDER_CROP_RADIO) {
         Some(image_type_border_crop_radio) => image_type_border_crop_radio.dyn_into::<HtmlInputElement>()?,
-        None => return Err("Could not retrieve include image type border crop radio element".into()),
+        None => return Err("Could not find include image type border crop radio element".into()),
     };
 
     if image_type_border_crop_radio.checked() {
@@ -96,17 +96,17 @@ fn get_selected_image_type(document: &Document) -> Result<ImageUriType, JsValue>
 fn get_selected_options(deck_list: HashMap<CollectionCardIdentifier, usize>, old_deck_list: Option<HashMap<CollectionCardIdentifier, usize>>, custom_card_blob_urls: Vec<String>, document: &Document) -> Result<UserOptions, JsValue> {
     let include_basic_lands_checkbox = match document.get_element_by_id(INCLUDE_BASIC_LANDS_CHECKBOX_ID) {
         Some(include_basic_lands_checkbox) => include_basic_lands_checkbox.dyn_into::<HtmlInputElement>()?,
-        None => return Err("Could not retrieve include basic lands checkbox element".into()),
+        None => return Err("Could not find include basic lands checkbox element".into()),
     };
 
     let include_tokens_checkbox = match document.get_element_by_id(INCLUDE_TOKENS_CHECKBOX_ID) {
         Some(include_tokens_checkbox) => include_tokens_checkbox.dyn_into::<HtmlInputElement>()?,
-        None => return Err("Could not retrieve include tokens checkbox element".into()),
+        None => return Err("Could not find include tokens checkbox element".into()),
     };
 
     let deck_diff_checkbox = match document.get_element_by_id(DECK_DIFF_CHECKBOX_ID) {
         Some(deck_diff_checkbox) => deck_diff_checkbox.dyn_into::<HtmlInputElement>()?,
-        None => return Err("Could not retrieve deck diff checkbox element".into()),
+        None => return Err("Could not find deck diff checkbox element".into()),
     };
 
     let old_deck = if deck_diff_checkbox.checked() {
@@ -125,7 +125,7 @@ fn get_selected_options(deck_list: HashMap<CollectionCardIdentifier, usize>, old
     })
 }
 
-async fn add_proxy_images_from_deck_list(mut user_options: UserOptions, document: &Document) -> Result<(), JsValue> {
+async fn add_proxy_images_from_deck_list(mut user_options: UserOptions, document: &Document, card_click_callback: Function) -> Result<(), JsValue> {
     let mut interface = ApiInterface::<ReqwestWrapper>::new()
         .map_err(rust_error_to_js)?;
 
@@ -149,30 +149,39 @@ async fn add_proxy_images_from_deck_list(mut user_options: UserOptions, document
 
     cards_to_display.sort();
 
-    let mut card_images = extract_images(&cards_to_display, user_options.exclude_basic_lands, user_options.image_type);
+    let card_images = extract_images(cards_to_display, user_options.exclude_basic_lands, user_options.image_type);
 
     let proxies_section = match document.get_element_by_id(PROXIES_DIV_ID) {
         Some(proxies_section) => proxies_section.dyn_into::<HtmlDivElement>()?,
-        None => return Err("Could not retrieve proxies div element".into()),
+        None => return Err("Could not find proxies div element".into()),
     };
     proxies_section.set_text_content(None);
 
     for extra_card in user_options.extra_cards {
-        card_images.push(Url::from_str(&extra_card).map_err(rust_error_to_js)?);
+        let image_node = document.create_element("img")?.dyn_into::<HtmlImageElement>()?;
+        image_node.set_src(&extra_card);
+        image_node.set_class_name("card-face");
+        proxies_section.append_child(&image_node)?;
     }
     
-    for card_image in card_images {
-        let image_node = document.create_element("img")?.dyn_into::<HtmlImageElement>()?;
-        image_node.set_src(card_image.as_str());
-        image_node.set_class_name("card");
-        proxies_section.append_child(&image_node)?;
+    for (card, card_face_images) in card_images {
+        for card_image in &card_face_images {
+            let image_node = document.create_element("img")?.dyn_into::<HtmlImageElement>()?;
+            image_node.set_src(card_image);
+            image_node.set_class_name("card-face");
+
+            let card_face_images_array = Array::from_iter(card_face_images.iter().cloned().map(|string| JsString::from(string)));
+            image_node.set_onclick(Some(&card_click_callback.bind3(&image_node, &card_face_images_array, &JsString::from(card.prints_search_uri.as_str()), &JsString::from(card.name.clone()))));
+            
+            proxies_section.append_child(&image_node)?;
+        }
     }
 
     Ok(())
 }
 
 #[wasm_bindgen]
-pub async fn generate_proxies_from_textbox(custom_card_blob_urls: Array, old_deck_list_enabled: JsValue) -> Result<(), JsValue> {
+pub async fn generate_proxies_from_textbox(custom_card_blob_urls: Array, old_deck_list_enabled: JsValue, card_click_callback: Function) -> Result<(), JsValue> {
     let mut custom_cards: Vec<String> = Vec::new();
     
     for card in custom_card_blob_urls.into_iter() {
@@ -183,10 +192,10 @@ pub async fn generate_proxies_from_textbox(custom_card_blob_urls: Array, old_dec
     }
 
     let Some(window) = window() else {
-        return Err("Could not retrieve global window object".into());
+        return Err("Could not find global window object".into());
     };
     let Some(document) = window.document() else {
-        return Err("Could not retrieve root document object".into());
+        return Err("Could not find root document object".into());
     };
     let Some(deck_list_textbox) = document.get_element_by_id(DECK_LIST_TEXTBOX_ID) else {
         return Err("Could not find deck list textbox".into());
@@ -208,11 +217,11 @@ pub async fn generate_proxies_from_textbox(custom_card_blob_urls: Array, old_dec
         None
     };
 
-    add_proxy_images_from_deck_list(get_selected_options(deck_list, old_deck_list, custom_cards, &document)?, &document).await
+    add_proxy_images_from_deck_list(get_selected_options(deck_list, old_deck_list, custom_cards, &document)?, &document, card_click_callback).await
 }
 
 #[wasm_bindgen]
-pub async fn generate_proxies_from_file_contents(file_contents: JsValue, file_mime_type: JsValue, old_file_contents: JsValue, old_file_mime_type: JsValue, custom_card_blob_urls: Array) -> Result<(), JsValue> {
+pub async fn generate_proxies_from_file_contents(file_contents: JsValue, file_mime_type: JsValue, old_file_contents: JsValue, old_file_mime_type: JsValue, custom_card_blob_urls: Array, card_click_callback: Function) -> Result<(), JsValue> {
     let mut custom_cards: Vec<String> = Vec::new();
     
     for card in custom_card_blob_urls.into_iter() {
@@ -223,10 +232,10 @@ pub async fn generate_proxies_from_file_contents(file_contents: JsValue, file_mi
     }
 
     let Some(window) = window() else {
-        return Err("Could not retrieve global window object".into());
+        return Err("Could not find global window object".into());
     };
     let Some(document) = window.document() else {
-        return Err("Could not retrieve root document object".into());
+        return Err("Could not find root document object".into());
     };
 
     let Some(contents) = file_contents.as_string() else {
@@ -259,7 +268,74 @@ pub async fn generate_proxies_from_file_contents(file_contents: JsValue, file_mi
         })
     };
 
-    add_proxy_images_from_deck_list(get_selected_options(deck_list, old_deck_list, custom_cards, &document)?, &document).await
+    add_proxy_images_from_deck_list(get_selected_options(deck_list, old_deck_list, custom_cards, &document)?, &document, card_click_callback).await
+}
+
+#[wasm_bindgen]
+pub struct Printings {
+    #[wasm_bindgen(getter_with_clone)]
+    pub printings: Array,
+    pub current_index: usize,
+}
+
+#[wasm_bindgen]
+pub struct Printing {
+    #[wasm_bindgen(getter_with_clone)]
+    pub faces: Array,
+    #[wasm_bindgen(getter_with_clone)]
+    pub set: String,
+    #[wasm_bindgen(getter_with_clone)]
+    pub collector_number: String,
+}
+
+fn printings_vec_to_array(card_printing_images: Vec<(Card, Vec<String>)>) -> Array {
+    Array::from_iter(
+        card_printing_images.into_iter().map(
+            |(card, printing_images)| JsValue::from(Printing {
+                faces: Array::from_iter(
+                    printing_images.into_iter().map(
+                        |printing_image| JsString::from(printing_image)
+                    )
+                ),
+                set: card.set_name,
+                collector_number: card.collector_number,
+            })
+        )
+    )
+}
+
+fn get_printings_and_current_index(card_printing_images: Vec<(Card, Vec<String>)>, current_printing_image: String) -> Result<Printings, JsValue> {
+    for (index, (_, printing_images)) in card_printing_images.iter().enumerate() {
+        for printing_image in printing_images {
+            if *printing_image == current_printing_image {
+                return Ok(Printings {
+                    printings: printings_vec_to_array(card_printing_images),
+                    current_index: index,
+                });
+            }
+        }
+    }
+
+    Err("Could not find current printing in list of card printings".into())
+}
+
+#[wasm_bindgen]
+pub async fn get_printings_for_card(search_url: String, current_printing_image: String, card_name: String) -> Result<Printings, JsValue> {
+    let Some(window) = window() else {
+        return Err("Could not find global window object".into());
+    };
+    let Some(document) = window.document() else {
+        return Err("Could not find root document object".into());
+    };
+    
+    let mut interface = ApiInterface::<ReqwestWrapper>::new()
+        .map_err(rust_error_to_js)?;
+
+    let card_printings = interface.get_all_printings(Url::from_str(&search_url).map_err(rust_error_to_js)?, card_name).await
+        .map_err(rust_error_to_js)?;
+
+    let card_printing_images = extract_images(card_printings, false, get_selected_image_type(&document)?);
+    get_printings_and_current_index(card_printing_images, current_printing_image)
 }
 
 // Called when the Wasm module is instantiated

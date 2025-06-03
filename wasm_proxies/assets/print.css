@@ -12,11 +12,11 @@ body {
     display: none;
 }
 
-#loading-overlay {
+.overlay {
     display: none;
 }
 
-.card {
+.card-face {
     width: 63mm;
     height: 88mm;
     margin: 0;

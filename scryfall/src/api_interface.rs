@@ -163,14 +163,14 @@ impl<Client> ApiInterface<Client>
             return Ok(current_page.data);
         };
 
-        current_page.data.append(&mut self.resolve_multi_page_search(next_page_url).await?);
+        current_page.data.append(&mut Box::pin(self.resolve_multi_page_search(next_page_url)).await?);
         Ok(current_page.data)
     }
 
-    pub async fn get_all_printings(&mut self, card: Card) -> Result<Vec<Card>, Box<dyn ErrorTrait>> {
-        info!("Sending API request for all printings of {}", card.name);
+    pub async fn get_all_printings(&mut self, prints_search_uri: Url, card_name: String) -> Result<Vec<Card>, Box<dyn ErrorTrait>> {
+        info!("Sending API request for all printings of {}", card_name);
 
-        let search_results = self.resolve_multi_page_search(card.prints_search_uri).await?;
+        let search_results = self.resolve_multi_page_search(prints_search_uri).await?;
 
         let mut card_printings = Vec::new();
         for api_object in search_results {

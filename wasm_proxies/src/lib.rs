@@ -162,6 +162,8 @@ async fn add_proxy_images_from_deck_list(mut user_options: UserOptions, document
         let image_node = document.create_element("img")?.dyn_into::<HtmlImageElement>()?;
         image_node.set_src(&extra_card);
         image_node.set_class_name("card-face");
+        image_node.set_tab_index(0);
+        image_node.set_alt("Custom card");
         image_node.set_attribute("loading", "lazy")?;
 
         let card_face_images_array = Array::of1(&JsString::from(extra_card));
@@ -179,6 +181,8 @@ async fn add_proxy_images_from_deck_list(mut user_options: UserOptions, document
             let image_node = document.create_element("img")?.dyn_into::<HtmlImageElement>()?;
             image_node.set_src(card_image);
             image_node.set_class_name("card-face");
+            image_node.set_tab_index(0);
+            image_node.set_alt(&card.name);
             image_node.set_attribute("loading", "lazy")?;
 
             let card_face_images_array = Array::from_iter(card_face_images.iter().cloned().map(|string| JsString::from(string)));

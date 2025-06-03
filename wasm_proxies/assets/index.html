@@ -29,7 +29,7 @@
 
     <div id="help-overlay" class="overlay" style="display: none;">
       <fieldset id="help-box" class="boxed option-box">
-        <legend class="tab-select-wrapper"><span id="usage-help-option" class="tab-select active boxed">Tips</span><span id="format-help-option" class="tab-select clickable boxed">Supported formats</span></legend>
+        <legend class="tab-select-wrapper"><span id="usage-help-option" class="tab-select active boxed" tabindex="0">Tips</span><span id="format-help-option" class="tab-select clickable boxed" tabindex="0">Supported formats</span></legend>
 
         <ul id="usage-help">
           <li>When printing proxies, both to PDF and to a printer, ensure that the scale is set to '100%' or 'Original', else the cards may not be the correct size.</li>
@@ -106,7 +106,7 @@
               <fieldset id="custom-cards-upload-fieldset" class="boxed option-box">
                 <legend>Add custom cards</legend>
                 
-                <div id="custom-cards-upload-wrapper" class="deck-entry-field file-upload clickable">
+                <div id="custom-cards-upload-wrapper" class="deck-entry-field file-upload clickable" tabindex="0">
                   <input type="file" id="custom-cards-upload" class="file-upload-handler" name="custom-cards-upload" accept="image/*" multiple>
                   <p id="custom-cards-upload-text" class="file-upload-text"></p>
                 </div>
@@ -117,7 +117,7 @@
         </div>
 
         <fieldset class="boxed option-box">
-          <legend class="tab-select-wrapper"><span id="deck-paste-option" class="tab-select active boxed">Paste deck list</span><span id="deck-file-option" class="tab-select clickable boxed">Deck list from file</span></legend>
+          <legend class="tab-select-wrapper"><span id="deck-paste-option" class="tab-select active boxed" tabindex="0">Paste deck list</span><span id="deck-file-option" class="tab-select clickable boxed" tabindex="0">Deck list from file</span></legend>
 
           <div id="deck-paste-controls" class="boxed deck-entry-box">
             <textarea id="deck-list" class="deck-entry-field" placeholder="Enter deck list here"></textarea>
@@ -129,11 +129,11 @@
           </div>
 
           <div id="deck-file-controls" class="boxed deck-entry-box" style="display: none;">
-            <div id="proxies-file-select-wrapper" class="deck-entry-field file-upload clickable">
+            <div id="proxies-file-select-wrapper" class="deck-entry-field file-upload clickable" tabindex="0">
               <input id="proxies-file-select" class="file-upload-handler" type="file" accept="text/plain,application/json,.dec">
               <p id="proxies-file-select-text" class="file-upload-text"></p>
             </div>
-            <div id="old-proxies-file-select-wrapper" class="deck-entry-field file-upload clickable" style="display: none;">
+            <div id="old-proxies-file-select-wrapper" class="deck-entry-field file-upload clickable" tabindex="0" style="display: none;">
               <input id="old-proxies-file-select" class="file-upload-handler" type="file" accept="text/plain,application/json,.dec">
               <p id="old-proxies-file-select-text" class="file-upload-text"></p>
             </div>

@@ -343,22 +343,6 @@ function updatePrintButton() {
     }
 }
 
-function showSupportedFormats() {
-    let formats_text = "" +
-    "Formats that have specific printings generate proxies that are exactly the card printings specified in the deck list.\n" +
-    "\nFormats that do not have specific printings generate proxies using default printings for every card.\n" +
-    "\nStandard text-based deck list formats from other deck builders should also be compatible.\n" +
-    "\nScryfall formats:\n" +
-    "Text\n" +
-    "JSON (has specific printings)\n" +
-    "\nDeckStats formats:\n" +
-    ".dec\n" +
-    "MTG Arena (has specific printings)\n" +
-    "MTG Online\n" +
-    "Text";
-    window.alert(formats_text);
-}
-
 toggleDeckDiff();
 await init();
 
@@ -433,14 +417,21 @@ document.getElementById("supported-formats-button").addEventListener("click", ()
 
 document.getElementById("card-overlay").addEventListener("click", (event) => {
     if (event.target.tagName.toUpperCase() === "SPAN" || event.target.tagName.toUpperCase() === "DIV") {
-        event.currentTarget.style.display = "none"
+        event.currentTarget.style.display = "none";
     }
 });
 
 document.getElementById("help-overlay").addEventListener("click", (event) => {
     if (event.target.id === "help-overlay") {
-        event.target.style.display = "none"
+        event.target.style.display = "none";
     }
 });
+
+document.body.onkeydown = (event) => {
+    if (event.key === "Escape") {
+        document.getElementById("card-overlay").style.display = "none";
+        document.getElementById("help-overlay").style.display = "none";
+    }
+}
 
 document.getElementById("loading-overlay").style.display = "none";

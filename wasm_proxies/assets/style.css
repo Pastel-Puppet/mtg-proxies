@@ -14,7 +14,7 @@
     max-height: 70svh;
     height: 1040px;
     width: auto;
-    aspect-ratio: 149/208;
+    aspect-ratio: 63/88;
 }
 
 .selected-card-wrapper {
@@ -136,15 +136,22 @@ body {
     min-height: 18px;
 }
 
-.deck-specifier-select {
+.tab-select {
     padding: 0 3px;
     user-select: none;
 }
 
-#deck-specifier-select-wrapper {
+.tab-select-wrapper {
     display: flex;
     justify-content: space-between;
     gap: 5px;
+}
+
+#help-box {
+    background-color: #E4D4ED;
+    max-width: 15cm;
+    max-height: 15cm;
+    overflow-y: auto;
 }
 
 .clickable {
@@ -235,14 +242,16 @@ html {
     z-index: 2;
 }
 
-#card-overlay {
+#card-overlay, #help-overlay {
     display: flex;
+    align-items: center;
     justify-content: center;
 }
 
 #supported-formats-button {
     flex: 1 0 auto;
     margin-bottom: 10px;
+    padding: 10px;
 }
 
 @media only screen and (max-width: 2100px) {

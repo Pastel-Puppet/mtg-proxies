@@ -17,7 +17,6 @@ const IMAGE_TYPE_SMALL_RADIO: &str = "image-type-small-radio";
 const IMAGE_TYPE_NORMAL_RADIO: &str = "image-type-normal-radio";
 const IMAGE_TYPE_LARGE_RADIO: &str = "image-type-large-radio";
 const IMAGE_TYPE_PNG_RADIO: &str = "image-type-png-radio";
-const IMAGE_TYPE_ART_CROP_RADIO: &str = "image-type-art-crop-radio";
 const IMAGE_TYPE_BORDER_CROP_RADIO: &str = "image-type-border-crop-radio";
 
 struct UserOptions {
@@ -70,15 +69,6 @@ fn get_selected_image_type(document: &Document) -> Result<ImageUriType, JsValue>
 
     if image_type_png_radio.checked() {
         return Ok(ImageUriType::Png);
-    }
-
-    let image_type_art_crop_radio = match document.get_element_by_id(IMAGE_TYPE_ART_CROP_RADIO) {
-        Some(image_type_art_crop_radio) => image_type_art_crop_radio.dyn_into::<HtmlInputElement>()?,
-        None => return Err("Could not find include image type art crop radio element".into()),
-    };
-
-    if image_type_art_crop_radio.checked() {
-        return Ok(ImageUriType::ArtCrop);
     }
 
     let image_type_border_crop_radio = match document.get_element_by_id(IMAGE_TYPE_BORDER_CROP_RADIO) {
@@ -172,6 +162,7 @@ async fn add_proxy_images_from_deck_list(mut user_options: UserOptions, document
         let image_node = document.create_element("img")?.dyn_into::<HtmlImageElement>()?;
         image_node.set_src(&extra_card);
         image_node.set_class_name("card-face");
+        image_node.set_attribute("loading", "lazy")?;
 
         let card_face_images_array = Array::of1(&JsString::from(extra_card));
         image_node.set_onclick(Some(&card_click_callback.bind1(&image_node, &JsValue::from(CardClickedData {
@@ -188,6 +179,7 @@ async fn add_proxy_images_from_deck_list(mut user_options: UserOptions, document
             let image_node = document.create_element("img")?.dyn_into::<HtmlImageElement>()?;
             image_node.set_src(card_image);
             image_node.set_class_name("card-face");
+            image_node.set_attribute("loading", "lazy")?;
 
             let card_face_images_array = Array::from_iter(card_face_images.iter().cloned().map(|string| JsString::from(string)));
             image_node.set_onclick(Some(&card_click_callback.bind1(&image_node, &JsValue::from(CardClickedData {

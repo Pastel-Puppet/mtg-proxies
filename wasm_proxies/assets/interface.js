@@ -96,8 +96,8 @@ async function cardClickedWrapper(card_clicked_data) {
 }
 
 async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_card) {
-    const custom_cards_upload = document.getElementById("card-overlay");
-    custom_cards_upload.textContent = "";
+    const card_printings_overlay = document.getElementById("card-overlay");
+    card_printings_overlay.textContent = "";
 
     // Add printing data for current printing only while the rest load.
     let card_printing_node = document.createElement("span");
@@ -149,8 +149,8 @@ async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_c
         card_printing_node.appendChild(card_printing_select_node);
     }
 
-    custom_cards_upload.appendChild(card_printing_node);
-    custom_cards_upload.style.display = "";
+    card_printings_overlay.appendChild(card_printing_node);
+    card_printings_overlay.style.display = "";
 
     if (is_custom_card) {
         return;
@@ -161,9 +161,6 @@ async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_c
         .catch((error) => {
             console.error(error);
             window.alert(error);
-        })
-        .finally(() => {
-            custom_cards_upload.textContent = "";
         });
 
     // Add card printings to overlay.
@@ -171,6 +168,7 @@ async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_c
     let previous_right_button = null;
     let first_printing = null;
     let first_left_button = null;
+    let printing_nodes = [];
 
     for (const [index, printing] of printings.printings.entries()) {
         let current_previous_printing = previous_printing;
@@ -206,7 +204,9 @@ async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_c
             let card_node = document.createElement("img");
             card_node.src = card_face;
             card_node.className = "selected-card";
-            card_node.loading = "lazy";
+            if (index != printings.current_index) {
+                card_node.loading = "lazy";
+            }
             card_node.fetchPriority = "high";
             card_node.dataset.index = index;
             card_node.dataset.set = printing.set;
@@ -249,7 +249,7 @@ async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_c
                 }
             }
 
-            custom_cards_upload.click()
+            card_printings_overlay.click()
         };
         card_printing_node.appendChild(card_printing_select_node);
 
@@ -257,7 +257,7 @@ async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_c
             card_printing_node.style.display = "none";
         }
 
-        custom_cards_upload.appendChild(card_printing_node);
+        printing_nodes.push(card_printing_node);
 
         previous_printing = card_printing_node;
         previous_right_button = right_button_node;
@@ -290,6 +290,8 @@ async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_c
             }
         }
     }
+
+    card_printings_overlay.replaceChildren(...printing_nodes);
 }
 
 function clearUploadedCustomCardsClicked(update_file_selection_text_callback) {
@@ -324,7 +326,7 @@ function updateFileSelectionText(file_element, text_element, default_message) {
     text_element.innerText = text;
 }
 
-function switchDeckControlsTab(selected, other, selected_controls, other_controls) {
+function switchTab(selected, other, selected_controls, other_controls) {
     selected.className = selected.className.replace("clickable", "active");
     other.className = other.className.replace("active", "clickable");
     other_controls.style.display = "none";
@@ -399,24 +401,45 @@ proxies_file_select_callback();
 old_proxies_file_select_callback();
 custom_cards_upload_callback();
 
-document.getElementById("deck-paste-option").addEventListener("click", (event) => switchDeckControlsTab(
+document.getElementById("deck-paste-option").addEventListener("click", (event) => switchTab(
     event.target,
     document.getElementById("deck-file-option"),
     document.getElementById("deck-paste-controls"),
     document.getElementById("deck-file-controls")
 ));
-document.getElementById("deck-file-option").addEventListener("click", (event) => switchDeckControlsTab(
+document.getElementById("deck-file-option").addEventListener("click", (event) => switchTab(
     event.target,
     document.getElementById("deck-paste-option"),
     document.getElementById("deck-file-controls"),
     document.getElementById("deck-paste-controls")
 ));
 
-document.getElementById("supported-formats-button").addEventListener("click", showSupportedFormats);
+document.getElementById("usage-help-option").addEventListener("click", (event) => switchTab(
+    event.target,
+    document.getElementById("format-help-option"),
+    document.getElementById("usage-help"),
+    document.getElementById("format-help")
+));
+document.getElementById("format-help-option").addEventListener("click", (event) => switchTab(
+    event.target,
+    document.getElementById("usage-help-option"),
+    document.getElementById("format-help"),
+    document.getElementById("usage-help")
+));
+
+document.getElementById("supported-formats-button").addEventListener("click", () => {
+    document.getElementById("help-overlay").style.display = "";
+});
 
 document.getElementById("card-overlay").addEventListener("click", (event) => {
     if (event.target.tagName.toUpperCase() === "SPAN" || event.target.tagName.toUpperCase() === "DIV") {
         event.currentTarget.style.display = "none"
+    }
+});
+
+document.getElementById("help-overlay").addEventListener("click", (event) => {
+    if (event.target.id === "help-overlay") {
+        event.target.style.display = "none"
     }
 });
 

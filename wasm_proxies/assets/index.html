@@ -27,6 +27,37 @@
 
     <div id="card-overlay" class="overlay" style="display: none;"></div>
 
+    <div id="help-overlay" class="overlay" style="display: none;">
+      <fieldset id="help-box" class="boxed option-box">
+        <legend class="tab-select-wrapper"><span id="usage-help-option" class="tab-select active boxed">Tips</span><span id="format-help-option" class="tab-select clickable boxed">Supported formats</span></legend>
+
+        <ul id="usage-help">
+          <li>When printing proxies, both to PDF and to a printer, ensure that the scale is set to '100%' or 'Original', else the cards may not be the correct size.</li>
+          <li>Phones often don't provide scale settings when printing by default, so either find a printing app that allows selecting a scale or print from a PC.</li>
+          <li>Selected custom card images will be scaled to the right size and aspect ratio, but the original image should be at or close to an aspect ratio of 63/88 to prevent image warping.</li>
+        </ul>
+        <span id="format-help" style="display: none;">
+          <ul>
+            <li>Formats that have specific printings generate proxies that are exactly the card printings specified in the deck list.</li>
+            <li>Formats that do not have specific printings generate proxies using default printings for every card.</li>
+            <li>Standard text-based deck list formats from other deck builders should also be compatible.</li>
+          </ul>
+          <p>Scryfall formats:</p>
+          <ul>
+            <li>Text</li>
+            <li>JSON (has specific printings)</li>
+          </ul>
+          <p>DeckStats formats:</p>
+          <ul>
+            <li>.dec</li>
+            <li>MTG Arena (has specific printings)</li>
+            <li>MTG Online</li>
+            <li>Text</li>
+          </ul>
+        </span>
+      </fieldset>
+    </div>
+
     <div id="options">
       <div id="options-wrapper">
         <div id="flex-padding-left">
@@ -34,7 +65,7 @@
             <legend>Options</legend>
 
             <div class="option-box-vertical">
-              <button id="supported-formats-button" class="boxed clickable">View supported formats</button>
+              <button id="supported-formats-button" class="boxed clickable">View advice and supported formats</button>
               <fieldset class="boxed option-box-vertical">
                 <legend>Image quality</legend>
                 <div class="list-option">
@@ -51,10 +82,6 @@
 
                 <div class="list-option">
                   <input type="radio" id="image-type-png-radio" name="image-type" value="png" class="clickable" checked><label for="image-type-png-radio" class="list-option">PNG (highest quality)</label>
-                </div>
-
-                <div class="list-option">
-                  <input type="radio" id="image-type-art-crop-radio" name="image-type" value="art-crop" class="clickable"><label for="image-type-art-crop-radio" class="list-option">Art crop</label>
                 </div>
 
                 <div class="list-option">
@@ -90,7 +117,7 @@
         </div>
 
         <fieldset class="boxed option-box">
-          <legend id="deck-specifier-select-wrapper"><span id="deck-paste-option" class="deck-specifier-select active boxed">Paste deck list</span><span id="deck-file-option" class="deck-specifier-select clickable boxed">Deck list from file</span></legend>
+          <legend class="tab-select-wrapper"><span id="deck-paste-option" class="tab-select active boxed">Paste deck list</span><span id="deck-file-option" class="tab-select clickable boxed">Deck list from file</span></legend>
 
           <div id="deck-paste-controls" class="boxed deck-entry-box">
             <textarea id="deck-list" class="deck-entry-field" placeholder="Enter deck list here"></textarea>

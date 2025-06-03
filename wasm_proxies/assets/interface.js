@@ -97,12 +97,24 @@ async function cardClicked(image_urls, prints_search_uri, card_name) {
     let card_wrapper_node = document.createElement("span");
     card_wrapper_node.className = "selected-card-wrapper";
 
+    let left_button_node = document.createElement("button");
+    left_button_node.className = "option-button clickable";
+    left_button_node.innerText = "←";
+    left_button_node.disabled = "true";
+    card_wrapper_node.appendChild(left_button_node);
+
     for (const card_face of image_urls) {
         let card_node = document.createElement("img");
         card_node.src = card_face;
         card_node.className = "selected-card";
         card_wrapper_node.appendChild(card_node)
     }
+
+    let right_button_node = document.createElement("button");
+    right_button_node.className = "option-button clickable";
+    right_button_node.innerText = "→";
+    right_button_node.disabled = "true";
+    card_wrapper_node.appendChild(right_button_node);
 
     card_printing_node.appendChild(card_wrapper_node);
     let card_printing_index_node = document.createElement("p");

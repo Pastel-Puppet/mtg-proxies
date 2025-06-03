@@ -125,6 +125,17 @@ fn get_selected_options(deck_list: HashMap<CollectionCardIdentifier, usize>, old
     })
 }
 
+#[wasm_bindgen]
+pub struct CardClickedData {
+    #[wasm_bindgen(getter_with_clone)]
+    pub card_face_images_array: Array,
+    #[wasm_bindgen(getter_with_clone)]
+    pub prints_search_url: String,
+    #[wasm_bindgen(getter_with_clone)]
+    pub card_name: String,
+    pub is_custom_card: bool,
+}
+
 async fn add_proxy_images_from_deck_list(mut user_options: UserOptions, document: &Document, card_click_callback: Function) -> Result<(), JsValue> {
     let mut interface = ApiInterface::<ReqwestWrapper>::new()
         .map_err(rust_error_to_js)?;
@@ -161,6 +172,14 @@ async fn add_proxy_images_from_deck_list(mut user_options: UserOptions, document
         let image_node = document.create_element("img")?.dyn_into::<HtmlImageElement>()?;
         image_node.set_src(&extra_card);
         image_node.set_class_name("card-face");
+
+        let card_face_images_array = Array::of1(&JsString::from(extra_card));
+        image_node.set_onclick(Some(&card_click_callback.bind1(&image_node, &JsValue::from(CardClickedData {
+            card_face_images_array,
+            prints_search_url: "".to_owned(),
+            card_name: "".to_owned(),
+            is_custom_card: true,
+        }))));
         proxies_section.append_child(&image_node)?;
     }
     
@@ -171,7 +190,12 @@ async fn add_proxy_images_from_deck_list(mut user_options: UserOptions, document
             image_node.set_class_name("card-face");
 
             let card_face_images_array = Array::from_iter(card_face_images.iter().cloned().map(|string| JsString::from(string)));
-            image_node.set_onclick(Some(&card_click_callback.bind3(&image_node, &card_face_images_array, &JsString::from(card.prints_search_uri.as_str()), &JsString::from(card.name.clone()))));
+            image_node.set_onclick(Some(&card_click_callback.bind1(&image_node, &JsValue::from(CardClickedData {
+                card_face_images_array,
+                prints_search_url: card.prints_search_uri.as_str().to_string(),
+                card_name: card.name.clone(),
+                is_custom_card: false,
+            }))));
             
             proxies_section.append_child(&image_node)?;
         }
@@ -286,6 +310,8 @@ pub struct Printing {
     pub set: String,
     #[wasm_bindgen(getter_with_clone)]
     pub collector_number: String,
+    #[wasm_bindgen(getter_with_clone)]
+    pub scryfall_url: String,
 }
 
 fn printings_vec_to_array(card_printing_images: Vec<(Card, Vec<String>)>) -> Array {
@@ -299,6 +325,7 @@ fn printings_vec_to_array(card_printing_images: Vec<(Card, Vec<String>)>) -> Arr
                 ),
                 set: card.set_name,
                 collector_number: card.collector_number,
+                scryfall_url: card.scryfall_uri.to_string(),
             })
         )
     )

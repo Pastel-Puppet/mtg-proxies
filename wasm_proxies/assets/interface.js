@@ -18,7 +18,7 @@ function getCustomCards() {
 
 async function proxiesTxtButtonClicked() {
     document.getElementById("loading-overlay").style.display = "block";
-    await generate_proxies_from_textbox(getCustomCards(), document.getElementById("deck-diff").checked, cardClicked)
+    await generate_proxies_from_textbox(getCustomCards(), document.getElementById("deck-diff").checked, cardClickedWrapper)
         .then(() => {
             updatePrintButton();
         })
@@ -44,7 +44,7 @@ function proxiesFileButtonClicked() {
                 if (old_file) {
                     const old_reader = new FileReader();
                     old_reader.onload = async () => {
-                        await generate_proxies_from_file_contents(reader.result, file.type, old_reader.result, old_file.type, getCustomCards(), cardClicked)
+                        await generate_proxies_from_file_contents(reader.result, file.type, old_reader.result, old_file.type, getCustomCards(), cardClickedWrapper)
                             .then(() => {
                                 updatePrintButton();
                             })
@@ -59,7 +59,7 @@ function proxiesFileButtonClicked() {
                     old_reader.readAsText(old_file);
                 }
             } else {
-                await generate_proxies_from_file_contents(reader.result, file.type, null, null, getCustomCards(), cardClicked)
+                await generate_proxies_from_file_contents(reader.result, file.type, null, null, getCustomCards(), cardClickedWrapper)
                     .then(() => {
                         updatePrintButton();
                     })
@@ -86,7 +86,16 @@ function proxiesFileButtonClicked() {
     }
 }
 
-async function cardClicked(image_urls, prints_search_uri, card_name) {
+async function cardClickedWrapper(card_clicked_data) {
+    await cardClicked(
+        card_clicked_data.card_face_images_array,
+        card_clicked_data.prints_search_url,
+        card_clicked_data.card_name,
+        card_clicked_data.is_custom_card
+    );
+}
+
+async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_card) {
     const custom_cards_upload = document.getElementById("card-overlay");
     custom_cards_upload.textContent = "";
 
@@ -97,11 +106,13 @@ async function cardClicked(image_urls, prints_search_uri, card_name) {
     let card_wrapper_node = document.createElement("span");
     card_wrapper_node.className = "selected-card-wrapper";
 
-    let left_button_node = document.createElement("button");
-    left_button_node.className = "option-button clickable";
-    left_button_node.innerText = "←";
-    left_button_node.disabled = "true";
-    card_wrapper_node.appendChild(left_button_node);
+    if (!is_custom_card) {
+        let left_button_node = document.createElement("button");
+        left_button_node.className = "option-button clickable";
+        left_button_node.innerText = "←";
+        left_button_node.disabled = "true";
+        card_wrapper_node.appendChild(left_button_node);
+    }
 
     for (const card_face of image_urls) {
         let card_node = document.createElement("img");
@@ -110,26 +121,40 @@ async function cardClicked(image_urls, prints_search_uri, card_name) {
         card_wrapper_node.appendChild(card_node)
     }
 
-    let right_button_node = document.createElement("button");
-    right_button_node.className = "option-button clickable";
-    right_button_node.innerText = "→";
-    right_button_node.disabled = "true";
-    card_wrapper_node.appendChild(right_button_node);
-
+    if (!is_custom_card) {
+        let right_button_node = document.createElement("button");
+        right_button_node.className = "option-button clickable";
+        right_button_node.innerText = "→";
+        right_button_node.disabled = "true";
+        card_wrapper_node.appendChild(right_button_node);
+    }
+    
     card_printing_node.appendChild(card_wrapper_node);
-    let card_printing_index_node = document.createElement("p");
-    card_printing_index_node.className = "card-printing-index boxed";
-    card_printing_index_node.innerText = "?/?\nLoading printings...";
-    card_printing_node.appendChild(card_printing_index_node);
 
-    let card_printing_select_node = document.createElement("button");
-    card_printing_select_node.className = "boxed clickable card-printing-select";
-    card_printing_select_node.innerText = "Use this printing";
-    card_printing_select_node.disabled = "true";
-    card_printing_node.appendChild(card_printing_select_node);
+    if (is_custom_card) {
+        let card_printing_index_node = document.createElement("p");
+        card_printing_index_node.className = "card-printing-index boxed";
+        card_printing_index_node.innerText = "This is a custom card\n\nNo printing information is available";
+        card_printing_node.appendChild(card_printing_index_node);
+    } else {
+        let card_printing_index_node = document.createElement("p");
+        card_printing_index_node.className = "card-printing-index boxed";
+        card_printing_index_node.innerText = "?/?\n\nLoading printings for " + card_name + "...";
+        card_printing_node.appendChild(card_printing_index_node);
+
+        let card_printing_select_node = document.createElement("button");
+        card_printing_select_node.className = "boxed clickable card-printing-select";
+        card_printing_select_node.innerText = "Use this printing";
+        card_printing_select_node.disabled = "true";
+        card_printing_node.appendChild(card_printing_select_node);
+    }
 
     custom_cards_upload.appendChild(card_printing_node);
     custom_cards_upload.style.display = "";
+
+    if (is_custom_card) {
+        return;
+    }
 
     // Fetch printing data.
     let printings = await get_printings_for_card(prints_search_uri, image_urls[0], card_name)
@@ -198,9 +223,15 @@ async function cardClicked(image_urls, prints_search_uri, card_name) {
 
         let card_printing_index_node = document.createElement("p");
         card_printing_index_node.className = "card-printing-index boxed";
-        card_printing_index_node.innerText = (index + 1) + "/" + printings.printings.length + "\n" + printing.set + " - " + printing.collector_number;
-        card_printing_node.appendChild(card_printing_index_node);
+        card_printing_index_node.innerText = (index + 1) + "/" + printings.printings.length + "\n" + printing.set + " - " + printing.collector_number + "\n";
+        
+        let card_link_node = document.createElement("a");
+        card_link_node.href = printing.scryfall_url;
+        card_link_node.innerText = "View more information about " + card_name + " on Scryfall";
+        card_printing_index_node.appendChild(card_link_node)
 
+        card_printing_node.appendChild(card_printing_index_node);
+        
         let card_printing_select_node = document.createElement("button");
         card_printing_select_node.className = "boxed clickable card-printing-select";
         card_printing_select_node.innerText = "Use this printing";
@@ -213,7 +244,7 @@ async function cardClicked(image_urls, prints_search_uri, card_name) {
                 for (const card of cards) {
                     if (card.className === "card-face" && card.src === old_printing) {
                         card.src = new_printing;
-                        card.onclick = cardClicked.bind(card, current_printing_faces, prints_search_uri, card_name);
+                        card.onclick = cardClicked.bind(card, current_printing_faces, prints_search_uri, card_name, true);
                     }
                 }
             }

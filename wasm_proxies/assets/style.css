@@ -2,6 +2,7 @@
     width: 63mm;
     height: 88mm;
     transition: transform .2s;
+    cursor: pointer;
 }
 
 .card-face:hover {
@@ -149,6 +150,7 @@ body {
 .clickable {
     background-color: #E4D4ED;
     border-color: #C9A8DC;
+    cursor: pointer;
 }
 
 .clickable:hover {

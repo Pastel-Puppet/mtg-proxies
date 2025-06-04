@@ -141,12 +141,6 @@ async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_c
         card_printing_index_node.className = "card-printing-index boxed";
         card_printing_index_node.innerText = "?/?\n\nLoading printings for " + card_name + "...";
         card_printing_node.appendChild(card_printing_index_node);
-
-        let card_printing_select_node = document.createElement("button");
-        card_printing_select_node.className = "boxed clickable card-printing-select";
-        card_printing_select_node.innerText = "Use this printing";
-        card_printing_select_node.disabled = "true";
-        card_printing_node.appendChild(card_printing_select_node);
     }
 
     card_printings_overlay.appendChild(card_printing_node);
@@ -177,11 +171,13 @@ async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_c
         let card_printing_node = document.createElement("span");
         card_printing_node.className = "card-printing";
 
+        let current_printing_faces_right = printing.faces;
         if (current_previous_right_button != null) {
             current_previous_right_button.onclick = () => {
                 if (current_previous_printing != null) {
                     current_previous_printing.style.display = "none";
                 }
+                changePrinting(printings.printings[(index - 1) % printings.printings.length].faces, current_printing_faces_right, prints_search_uri, card_name);
                 card_printing_node.style.display = "";
             };
         }
@@ -192,9 +188,12 @@ async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_c
         let left_button_node = document.createElement("button");
         left_button_node.className = "option-button clickable";
         left_button_node.innerText = "←";
+
+        let current_printing_faces_left = printing.faces;
         if (current_previous_printing != null) {
             left_button_node.onclick = () => {
                 card_printing_node.style.display = "none";
+                changePrinting(current_printing_faces_left, printings.printings[(index - 1) % printings.printings.length].faces, prints_search_uri, card_name);
                 current_previous_printing.style.display = "";
             };
         }
@@ -231,27 +230,6 @@ async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_c
         card_printing_index_node.appendChild(card_link_node)
 
         card_printing_node.appendChild(card_printing_index_node);
-        
-        let card_printing_select_node = document.createElement("button");
-        card_printing_select_node.className = "boxed clickable card-printing-select";
-        card_printing_select_node.innerText = "Use this printing";
-
-        let current_printing_faces = printing.faces;
-        card_printing_select_node.onclick = () => {
-            for (const [new_printing, old_printing] of current_printing_faces.map((new_url, index) => [new_url, image_urls[index]])) {
-                console.log("Changing " + old_printing + " to " + new_printing);
-                let cards = document.getElementById("proxies").children;
-                for (const card of cards) {
-                    if (card.className === "card-face" && card.src === old_printing) {
-                        card.src = new_printing;
-                        card.onclick = cardClicked.bind(card, current_printing_faces, prints_search_uri, card_name, true);
-                    }
-                }
-            }
-
-            card_printings_overlay.click()
-        };
-        card_printing_node.appendChild(card_printing_select_node);
 
         if (index != printings.current_index) {
             card_printing_node.style.display = "none";
@@ -277,6 +255,7 @@ async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_c
             if (previous_printing != null) {
                 previous_printing.style.display = "";
             }
+            changePrinting(printings.printings[0].faces, printings.printings[printings.printings.length - 1].faces, prints_search_uri, card_name);
         }
     }
 
@@ -288,10 +267,24 @@ async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_c
             if (first_printing != null) {
                 first_printing.style.display = "";
             }
+            changePrinting(printings.printings[printings.printings.length - 1].faces, printings.printings[0].faces, prints_search_uri, card_name);
         }
     }
 
     card_printings_overlay.replaceChildren(...printing_nodes);
+}
+
+function changePrinting(old_printing_urls, new_printing_urls, prints_search_uri, card_name) {
+    for (const [old_printing, new_printing] of old_printing_urls.map((new_url, index) => [new_url, new_printing_urls[index]])) {
+        console.log("Changing " + old_printing + " to " + new_printing);
+        let cards = document.getElementById("proxies").children;
+        for (const card of cards) {
+            if (card.className === "card-face" && card.src === old_printing) {
+                card.src = new_printing;
+                card.onclick = cardClicked.bind(card, new_printing_urls, prints_search_uri, card_name, false);
+            }
+        }
+    }
 }
 
 function clearUploadedCustomCardsClicked(update_file_selection_text_callback) {

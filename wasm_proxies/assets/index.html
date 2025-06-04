@@ -61,34 +61,10 @@
     <div id="options">
       <div id="options-wrapper">
         <div id="flex-padding-left">
-          <fieldset id="proxy-options" class="boxed option-box">
+          <fieldset id="proxy-options" class="boxed option-box-grid">
             <legend>Options</legend>
 
-            <div class="option-box-vertical">
-              <button id="supported-formats-button" class="boxed clickable">View advice and supported formats</button>
-              <fieldset class="boxed option-box-vertical">
-                <legend>Image quality</legend>
-                <div class="list-option">
-                  <input type="radio" id="image-type-small-radio" name="image-type" value="small" class="clickable"><label for="image-type-small-radio" class="list-option">Small (lowest quality)</label>
-                </div>
-
-                <div class="list-option">
-                  <input type="radio" id="image-type-normal-radio" name="image-type" value="normal" class="clickable"><label for="image-type-normal-radio" class="list-option">Normal</label>
-                </div>
-
-                <div class="list-option">
-                  <input type="radio" id="image-type-large-radio" name="image-type" value="large" class="clickable"><label for="image-type-large-radio" class="list-option">Large</label>
-                </div>
-
-                <div class="list-option">
-                  <input type="radio" id="image-type-png-radio" name="image-type" value="png" class="clickable" checked><label for="image-type-png-radio" class="list-option">PNG (highest quality)</label>
-                </div>
-
-                <div class="list-option">
-                  <input type="radio" id="image-type-border-crop-radio" name="image-type" value="border-crop" class="clickable"><label for="image-type-border-crop-radio" class="list-option">Border crop</label>
-                </div>
-              </fieldset>
-            </div>
+            <button id="supported-formats-button" class="boxed clickable">View advice and supported formats</button>
 
             <div class="option-box-vertical">
               <div class="list-option">
@@ -102,17 +78,40 @@
               <div class="list-option">
                 <input type="checkbox" id="deck-diff" name="deck-diff" class="clickable"><label for="deck-diff" class="list-option">Provide two deck lists and print only newly added cards</label>
               </div>
-
-              <fieldset id="custom-cards-upload-fieldset" class="boxed option-box">
-                <legend>Add custom cards</legend>
-                
-                <div id="custom-cards-upload-wrapper" class="deck-entry-field file-upload clickable" tabindex="0">
-                  <input type="file" id="custom-cards-upload" class="file-upload-handler" name="custom-cards-upload" accept="image/*" multiple>
-                  <p id="custom-cards-upload-text" class="file-upload-text"></p>
-                </div>
-                <button id="custom-cards-clear-upload" class="option-button clickable" name="custom-cards-clear-upload">Clear selected files</button>
-              </fieldset>
             </div>
+
+            <fieldset class="boxed option-box-vertical">
+              <legend>Image quality</legend>
+              <div class="list-option">
+                <input type="radio" id="image-type-small-radio" name="image-type" value="small" class="clickable"><label for="image-type-small-radio" class="list-option">Small (lowest quality)</label>
+              </div>
+
+              <div class="list-option">
+                <input type="radio" id="image-type-normal-radio" name="image-type" value="normal" class="clickable"><label for="image-type-normal-radio" class="list-option">Normal</label>
+              </div>
+
+              <div class="list-option">
+                <input type="radio" id="image-type-large-radio" name="image-type" value="large" class="clickable"><label for="image-type-large-radio" class="list-option">Large</label>
+              </div>
+
+              <div class="list-option">
+                <input type="radio" id="image-type-png-radio" name="image-type" value="png" class="clickable" checked><label for="image-type-png-radio" class="list-option">PNG (highest quality)</label>
+              </div>
+
+              <div class="list-option">
+                <input type="radio" id="image-type-border-crop-radio" name="image-type" value="border-crop" class="clickable"><label for="image-type-border-crop-radio" class="list-option">Border crop</label>
+              </div>
+            </fieldset>
+
+            <fieldset id="custom-cards-upload-fieldset" class="boxed option-box">
+              <legend>Add custom cards</legend>
+              
+              <div id="custom-cards-upload-wrapper" class="deck-entry-field file-upload clickable" tabindex="0">
+                <input type="file" id="custom-cards-upload" class="file-upload-handler" name="custom-cards-upload" accept="image/*" multiple>
+                <p id="custom-cards-upload-text" class="file-upload-text"></p>
+              </div>
+              <button id="custom-cards-clear-upload" class="option-button clickable" name="custom-cards-clear-upload">Clear selected files</button>
+            </fieldset>
           </fieldset>
         </div>
 

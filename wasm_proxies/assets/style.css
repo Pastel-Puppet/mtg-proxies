@@ -31,10 +31,6 @@
     background-color: #F6F1F9;
 }
 
-.card-printing-select {
-    padding: 10px 20px;
-}
-
 .boxed {
     border-style: solid;
     border-width: 2px;
@@ -60,11 +56,16 @@
     flex-direction: column;
 }
 
+.option-box-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+}
+
 #proxies {
-    font-size: 0;
-    display: flex;
-    flex-flow: row wrap;
+    display: grid;
     justify-content: center;
+    grid-template-columns: repeat(auto-fill, 63mm);
+    padding: 0 5svw;
 }
 
 .options {

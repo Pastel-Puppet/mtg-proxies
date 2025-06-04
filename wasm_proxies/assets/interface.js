@@ -158,29 +158,14 @@ async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_c
         });
 
     // Add card printings to overlay.
-    let previous_printing = null;
-    let previous_right_button = null;
-    let first_printing = null;
-    let first_left_button = null;
-    let printing_nodes = [];
+    const printing_nodes = [];
+    const left_button_nodes = [];
+    const card_faces_nodes = [];
+    const right_button_nodes = [];
 
     for (const [index, printing] of printings.printings.entries()) {
-        let current_previous_printing = previous_printing;
-        let current_previous_right_button = previous_right_button;
-
         let card_printing_node = document.createElement("span");
         card_printing_node.className = "card-printing";
-
-        let current_printing_faces_right = printing.faces;
-        if (current_previous_right_button != null) {
-            current_previous_right_button.onclick = () => {
-                if (current_previous_printing != null) {
-                    current_previous_printing.style.display = "none";
-                }
-                changePrinting(printings.printings[(index - 1) % printings.printings.length].faces, current_printing_faces_right, prints_search_uri, card_name);
-                card_printing_node.style.display = "";
-            };
-        }
 
         let card_wrapper_node = document.createElement("span");
         card_wrapper_node.className = "selected-card-wrapper";
@@ -188,35 +173,26 @@ async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_c
         let left_button_node = document.createElement("button");
         left_button_node.className = "option-button clickable";
         left_button_node.innerText = "←";
-
-        let current_printing_faces_left = printing.faces;
-        if (current_previous_printing != null) {
-            left_button_node.onclick = () => {
-                card_printing_node.style.display = "none";
-                changePrinting(current_printing_faces_left, printings.printings[(index - 1) % printings.printings.length].faces, prints_search_uri, card_name);
-                current_previous_printing.style.display = "";
-            };
-        }
         card_wrapper_node.appendChild(left_button_node);
+        left_button_nodes.push(left_button_node);
 
+        let card_face_nodes = [];
         for (const card_face of printing.faces) {
             let card_node = document.createElement("img");
             card_node.src = card_face;
             card_node.className = "selected-card";
-            if (index != printings.current_index) {
-                card_node.loading = "lazy";
-            }
+            card_node.loading = "lazy";
             card_node.fetchPriority = "high";
-            card_node.dataset.index = index;
-            card_node.dataset.set = printing.set;
-            card_node.dataset.collectorNumber = printing.collector_number;
             card_wrapper_node.appendChild(card_node)
+            card_face_nodes.push(card_node);
         }
+        card_faces_nodes.push(card_face_nodes);
 
         let right_button_node = document.createElement("button");
         right_button_node.className = "option-button clickable";
         right_button_node.innerText = "→";
         card_wrapper_node.appendChild(right_button_node);
+        right_button_nodes.push(right_button_node);
 
         card_printing_node.appendChild(card_wrapper_node);
 
@@ -236,38 +212,51 @@ async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_c
         }
 
         printing_nodes.push(card_printing_node);
-
-        previous_printing = card_printing_node;
-        previous_right_button = right_button_node;
-        if (first_printing === null) {
-            first_printing = card_printing_node;
-        }
-        if (first_left_button === null) {
-            first_left_button = left_button_node;
-        }
     }
 
-    if (first_left_button != null) {
-        first_left_button.onclick = () => {
-            if (first_printing != null) {
-                first_printing.style.display = "none";
-            }
-            if (previous_printing != null) {
-                previous_printing.style.display = "";
-            }
-            changePrinting(printings.printings[0].faces, printings.printings[printings.printings.length - 1].faces, prints_search_uri, card_name);
-        }
-    }
+    // Assign button and loading behaviours.
+    let max = printings.printings.length;
+    for (let index = 0; index < max; index++) {
+        // Force the modulo to be positive.
+        const left_left_index = (((index - 2) % max) + max) % max;
+        const left_index = (((index - 1) % max) + max) % max;
+        const right_index = (((index + 1) % max) + max) % max;
+        const right_right_index = (((index + 2) % max) + max) % max;
 
-    if (previous_right_button != null) {
-        previous_right_button.onclick = () => {
-            if (previous_printing != null) {
-                previous_printing.style.display = "none";
+        const left_printing_node = printing_nodes[left_index];
+        const current_printing_node = printing_nodes[index];
+        const right_printing_node = printing_nodes[right_index];
+
+        const left_printing = printings.printings[left_index].faces;
+        const current_printing = printings.printings[index].faces;
+        const right_printing = printings.printings[right_index].faces;
+        
+        left_button_nodes[index].onclick = () => {
+            for (const card_face_node of card_faces_nodes[left_left_index]) {
+                card_face_node.loading = "eager";
             }
-            if (first_printing != null) {
-                first_printing.style.display = "";
+
+            current_printing_node.style.display = "none";
+            changePrinting(current_printing, left_printing, prints_search_uri, card_name);
+            left_printing_node.style.display = "";
+        };
+
+        right_button_nodes[index].onclick = () => {
+            for (const card_face_node of card_faces_nodes[right_right_index]) {
+                card_face_node.loading = "eager";
             }
-            changePrinting(printings.printings[printings.printings.length - 1].faces, printings.printings[0].faces, prints_search_uri, card_name);
+
+            current_printing_node.style.display = "none";
+            changePrinting(current_printing, right_printing, prints_search_uri, card_name);
+            right_printing_node.style.display = "";
+        };
+
+        if (index === printings.current_index) {
+            for (const selected_or_adjacent_index of [left_index, index, right_index]) {
+                for (const card_face_node of card_faces_nodes[selected_or_adjacent_index]) {
+                    card_face_node.loading = "eager";
+                }
+            }
         }
     }
 

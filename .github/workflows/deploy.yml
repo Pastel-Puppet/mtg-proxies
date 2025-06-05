@@ -22,12 +22,11 @@ jobs:
       with:
         node-version: '24.1'
     - name: Prepare dependencies
-      run: npm --prefix wasm_proxies clean-install
+      run: npm clean-install
     - name: Build
-      run: npm --prefix wasm_proxies run build
+      run: npm run build
     - name: Deploy
       uses: cloudflare/wrangler-action@v3
       with:
         apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        workingDirectory: "wasm_proxies"

@@ -11,11 +11,8 @@ wasm-opt = ['-Oz']
 
 [dependencies]
 console_log = { version = "1.0.0", features = ["color"] }
-log = { version = "0.4.27", features = ["std"] }
+log = "0.4.27"
 scryfall = { path = "../scryfall" }
-serde = "1.0.219"
-serde-wasm-bindgen = "0.6.5"
-serde_json = "1.0.140"
 url = "2.5.4"
 wasm-bindgen = "0.2.100"
 wasm-bindgen-futures = "0.4.50"

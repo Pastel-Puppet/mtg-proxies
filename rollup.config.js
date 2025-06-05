@@ -2,16 +2,16 @@ import terser from '@rollup/plugin-terser';
 import copy from 'rollup-plugin-copy';
 
 export default {
-    input: 'assets/interface.js',
+    input: 'wasm_proxies/interface.js',
     output: {
-        file: 'dist/bundle.js',
+        file: 'www/bundle.js',
         format: 'es',
         plugins: [terser()]
     },
     plugins: [
         copy({
             targets: [
-                { src: ['assets/*.html', 'assets/*.css', 'assets/*.ico', 'assets/pkg/*.wasm'], dest: 'dist' }
+                { src: ['wasm_proxies/pkg/*.wasm'], dest: 'www' }
             ]
         })
     ]

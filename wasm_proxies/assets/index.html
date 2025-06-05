@@ -7,8 +7,7 @@
     <link href="print.css" rel="stylesheet" media="print">
     <link href="favicon.ico" rel="icon" type="image/x-icon">
 
-    <link href="pkg/wasm_proxies_bg.wasm" rel="preload" as="fetch" type="application/wasm" crossorigin="anonymous">
-    <link href="pkg/wasm_proxies.js" rel="modulepreload">
+    <link href="wasm_proxies_bg.wasm" rel="preload" as="fetch" type="application/wasm" crossorigin="anonymous">
     <link href="https://api.scryfall.com/" rel="preconnect" crossorigin="anonymous">
     <link href="https://cards.scryfall.com/" rel="preconnect" crossorigin="anonymous">
 
@@ -19,7 +18,7 @@
     <!-- Dummy script tag to prevent FOUC -->
     <script>0</script>
     
-    <script type="module" src="interface.js"></script>
+    <script type="module" src="bundle.js"></script>
 
     <div id="loading-overlay" class="overlay">
       <span id="loader"></span>

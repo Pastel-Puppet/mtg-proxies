@@ -22,16 +22,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: jetli/wasm-pack-action@v0.4.0
+    - name: Use Node.js
+      uses: actions/setup-node@v4
       with:
-        version: 'latest'
+        node-version: '24.1'
+    - name: Prepare dependencies
+      run: npm --prefix wasm_proxies/ clean-install
     - name: Build
-      run: wasm-pack build --target web --no-typescript --no-pack --out-dir assets/pkg wasm_proxies/
+      run: npm --prefix wasm_proxies run build
     - name: Upload static files as artifact
       id: deployment
       uses: actions/upload-pages-artifact@v3
       with:
-        path: wasm_proxies/assets/
+        path: wasm_proxies/dist/
   
   deploy:
     environment:

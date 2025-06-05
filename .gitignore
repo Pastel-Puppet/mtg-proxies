@@ -1,6 +1,7 @@
 /target
-*.json
 *.txt
 *.png
 proxies.html
 .devcontainer
+node_modules/
+dist/

@@ -265,7 +265,6 @@ async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_c
 
 function changePrinting(old_printing_urls, new_printing_urls, prints_search_uri, card_name) {
     for (const [old_printing, new_printing] of old_printing_urls.map((new_url, index) => [new_url, new_printing_urls[index]])) {
-        console.log("Changing " + old_printing + " to " + new_printing);
         let cards = document.getElementById("proxies").children;
         for (const card of cards) {
             if (card.className === "card-face" && card.src === old_printing) {

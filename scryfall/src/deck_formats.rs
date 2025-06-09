@@ -40,15 +40,17 @@ fn parse_card_name(name: &str) -> CollectionCardIdentifier {
 }
 
 fn try_parse_line_as_mtg_arena(line: &str) -> Option<(CollectionCardIdentifier, usize)> {
+    let line = match line.strip_suffix(" *F*") {
+        Some(stripped_line) => stripped_line,
+        None => line,
+    };
+
     let mut line_split = line.rsplit(" ");
 
     let collector_number_string = line_split.next()?;
-    if let Err(_) = collector_number_string.parse::<usize>() {
-        return None;
-    };
     let set_identifier = line_split.next()?.strip_prefix("(")?.strip_suffix(")")?;
     let Ok(card_count) = line_split.last()?.parse::<usize>() else {
-        return Some((CollectionCardIdentifier::CollectorNumberSet((collector_number_string.to_string(), set_identifier.to_ascii_lowercase())), 1));
+        return Some((CollectionCardIdentifier::CollectorNumberSet((collector_number_string.to_ascii_lowercase(), set_identifier.to_ascii_lowercase())), 1));
     };
 
     Some((CollectionCardIdentifier::CollectorNumberSet((collector_number_string.to_string(), set_identifier.to_ascii_lowercase())), card_count))
@@ -56,7 +58,7 @@ fn try_parse_line_as_mtg_arena(line: &str) -> Option<(CollectionCardIdentifier, 
 
 fn parse_txt_line(line: String) -> Option<(CollectionCardIdentifier, usize)> {
     let mut text = line.trim();
-    if text.is_empty() || text.starts_with("//") || text.starts_with("Main") || text.starts_with("Commander") {
+    if text.is_empty() || text.starts_with("//") || text == "Main" || text == "Commander" || text == "About" || text.starts_with("Name") || text == "Deck" {
         return None
     }
 

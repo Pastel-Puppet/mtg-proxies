@@ -2,8 +2,6 @@
 target/
 node_modules/
 dist/
-*.txt
-*.png
 *.wasm
 proxies.html
 bundle.js

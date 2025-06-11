@@ -1,17 +1,26 @@
 <!doctype html>
-<html>
+<html lang="en-GB">
   <head>
-    <title>Proxy Generator</title>
+    <title>MTG Proxy Generator</title>
 
     <link href="style.css" rel="stylesheet" media="screen">
     <link href="print.css" rel="stylesheet" media="print">
     <link href="favicon.ico" rel="icon" type="image/x-icon">
+    <link href="https://mtg-proxies.pastel-puppet.workers.dev" rel="canonical">
 
     <link href="wasm_proxies_bg.wasm" rel="preload" as="fetch" type="application/wasm" crossorigin="anonymous">
-    <link href="https://api.scryfall.com/" rel="preconnect" crossorigin="anonymous">
-    <link href="https://cards.scryfall.com/" rel="preconnect" crossorigin="anonymous">
+    <link href="https://api.scryfall.com/" rel="dns-prefetch" crossorigin="anonymous">
+    <link href="https://cards.scryfall.com/" rel="dns-prefetch" crossorigin="anonymous">
 
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta name="description" content="Proxy generator and printer for Magic: The Gathering decks, supporting deck list formats from Scryfall, Deckstats, Moxfield, and more.">
+
+    <meta property="og:title" content="MTG Proxy Generator">
+    <meta property="og:description" content="Proxy generator and printer for Magic: The Gathering decks, supporting deck list formats from Scryfall, Deckstats, Moxfield, and more.">
+    <meta property="og:url" content="https://mtg-proxies.pastel-puppet.workers.dev">
+    <meta property="og:image" content="https://mtg-proxies.pastel-puppet.workers.dev/mtg-proxies.png">
+    <meta property="og:locale" content="en_GB">
+    <meta property="og:type" content="website">
   </head>
 
   <body>
@@ -46,7 +55,7 @@
             <li>Text</li>
             <li>JSON (has specific printings)</li>
           </ul>
-          <p>Supported DeckStats formats:</p>
+          <p>Supported Deckstats formats:</p>
           <ul>
             <li>Text</li>
             <li>.dec</li>

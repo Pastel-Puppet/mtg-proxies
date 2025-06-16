@@ -1,0 +1,32 @@
+name: Build
+
+on:
+  push:
+    branches: [ "development" ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24.1'
+    - name: Prepare dependencies
+      run: npm clean-install
+    - name: Build
+      run: npm run build
+    - name: Commit changes to main branch
+      uses: stefanzweifel/git-auto-commit-action@v6
+      with:
+        commit_message: ${{ github.event.head_commit.message }}
+        branch: main
+        file_pattern: 'www/* wrangler.toml .github/workflows/deploy.yml'

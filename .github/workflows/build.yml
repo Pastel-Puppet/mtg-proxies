@@ -33,7 +33,7 @@ jobs:
         git reset --soft origin/main
         git checkout origin/main
         git reset
-        git add --force www/* wrangler.toml .github/workflows/deploy.yml README.md
+        git add --force www/* wrangler.toml README.md
         git commit --message="${{ github.event.head_commit.message }}"
         git push origin HEAD:main
       env:

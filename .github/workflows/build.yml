@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: [ "development" ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 concurrency:
@@ -30,16 +30,16 @@ jobs:
       run: |
         git fetch
         git checkout --detach
-        git reset --soft origin/main
-        git checkout origin/main
+        git reset --soft origin/assets
+        git checkout origin/assets
         git reset
-        git add --force www/* wrangler.toml README.md
+        git add --force www/* wrangler.toml
         OPTIONS=""
         if [ "$(git log -1 --pretty=%s)" = "${{ github.event.head_commit.message }}" ]; then
-          OPTIONS="--amend"
+          OPTIONS="--amend";
         fi
         if git commit $OPTIONS --message="${{ github.event.head_commit.message }}"; then
-          git push --force origin HEAD:main;
+          git push --force origin HEAD:assets;
         fi
       env:
         GIT_AUTHOR_NAME: ${{ github.event.head_commit.author.name }}

@@ -2,12 +2,14 @@
   "type": "module",
   "main": "assets/interface.js",
   "scripts": {
-    "build": "wasm-pack build --target web --no-typescript --no-pack --out-dir pkg wasm_proxies && rollup -c"
+    "build": "wasm-pack build --target web --no-typescript --no-pack --out-dir pkg wasm_proxies",
+    "postbuild": "rollup -c"
   },
   "devDependencies": {
     "@rollup/plugin-terser": "^0.4.4",
     "rollup": "^4.41.1",
     "rollup-plugin-copy": "^3.5.0",
+    "rust": "^1.0.8-nightly",
     "wasm-pack": "^0.13.1"
   },
   "private": true

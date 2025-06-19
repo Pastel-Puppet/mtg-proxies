@@ -3,7 +3,6 @@ use reqwest::{Client, header::ACCEPT};
 use governor::{DefaultDirectRateLimiter, Quota, RateLimiter};
 use nonzero_ext::nonzero;
 use serde_json::Value;
-use url::Url;
 
 use crate::api_interface::RequestClient;
 
@@ -29,7 +28,7 @@ impl RequestClient for ReqwestWrapper {
         })
     }
 
-    async fn get(&self, url: Url) -> Result<String, Box<(dyn Error)>> {
+    async fn get(&self, url: String) -> Result<String, Box<(dyn Error)>> {
         self.rate_limiter.until_ready().await;
 
         let response = self.client.get(url)
@@ -40,7 +39,7 @@ impl RequestClient for ReqwestWrapper {
         Ok(response)
     }
 
-    async fn get_with_parameters(&self, url: Url, query_parameters: &[(&str, &str)]) -> Result<String, Box<(dyn Error)>> {
+    async fn get_with_parameters(&self, url: String, query_parameters: &[(&str, &str)]) -> Result<String, Box<(dyn Error)>> {
         self.rate_limiter.until_ready().await;
 
         let mut request = self.client.get(url);
@@ -57,7 +56,7 @@ impl RequestClient for ReqwestWrapper {
         Ok(response)
     }
 
-    async fn post(&self, url: Url, payload: &Value) -> Result<String, Box<(dyn Error)>> {
+    async fn post(&self, url: String, payload: &Value) -> Result<String, Box<(dyn Error)>> {
         self.rate_limiter.until_ready().await;
 
         let response = self.client.post(url)

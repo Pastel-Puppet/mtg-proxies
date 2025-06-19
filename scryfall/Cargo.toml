@@ -11,8 +11,6 @@ nonzero_ext = { version = "0.3.0", optional = true }
 reqwest = { version = "0.12.15", features = ["json"], optional = true }
 serde = { version = "1.0.219", features = ["alloc", "derive"], default-features = false }
 serde_json = { version = "1.0.140", features = ["alloc"], default-features = false }
-url = { version = "2.5.4", default-features = false }
-url-macro = "0.2.0"
 uuid = { version = "1.16.0", features = ["serde"], default-features = false }
 wasm-bindgen = { version = "0.2.100", features = ["msrv"], default-features = false, optional = true }
 wasm-bindgen-futures = { version = "0.4.50", default-features = false, optional = true }
@@ -27,7 +25,9 @@ features = [
     'RequestMode',
     'Response',
     'Window',
-    "console"
+    'console',
+    'Url',
+    'UrlSearchParams',
 ]
 optional = true
 

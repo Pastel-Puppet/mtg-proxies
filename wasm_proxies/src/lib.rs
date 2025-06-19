@@ -3,11 +3,10 @@ extern crate alloc;
 
 mod logging;
 
-use core::{fmt::Display, str::FromStr, arch::wasm32::unreachable};
+use core::{fmt::Display, arch::wasm32::unreachable};
 use alloc::{borrow::ToOwned, format, string::{String, ToString}, vec::Vec};
 use hashbrown::HashMap;
 use log::error;
-use url::Url;
 use wasm_bindgen::prelude::*;
 use web_sys::{js_sys::{Array, Function, JsString}, window, Document, HtmlDivElement, HtmlImageElement, HtmlInputElement, HtmlTextAreaElement};
 
@@ -370,7 +369,7 @@ pub async fn get_printings_for_card(search_url: String, current_printing_image: 
     let mut interface = ApiInterface::<WasmFetchWrapper>::new()
         .map_err(rust_error_to_js)?;
 
-    let card_printings = interface.get_all_printings(Url::from_str(&search_url).map_err(rust_error_to_js)?, card_name).await
+    let card_printings = interface.get_all_printings(search_url, card_name).await
         .map_err(rust_error_to_js)?;
 
     let card_printing_images = extract_images(card_printings, false, get_selected_image_type(&document)?);

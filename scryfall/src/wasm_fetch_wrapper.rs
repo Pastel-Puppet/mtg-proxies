@@ -1,10 +1,9 @@
 use core::{error::Error, fmt::Display};
 use alloc::{string::{String, ToString}, boxed::Box, borrow::ToOwned};
 use serde_json::Value;
-use url::Url;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{console::error_1, js_sys::JsString, window, Request, RequestInit, RequestMode, Response, Window};
+use web_sys::{console::error_1, js_sys::JsString, window, Request, RequestInit, RequestMode, Response, Url, UrlSearchParams, Window};
 
 use crate::api_interface::RequestClient;
 
@@ -60,7 +59,7 @@ pub struct WasmFetchWrapper {
 }
 
 impl WasmFetchWrapper {
-    async fn _get(&self, url: Url, opts: RequestInit) -> Result<JsValue, JsValue> {
+    async fn _get(&self, url: String, opts: RequestInit) -> Result<JsValue, JsValue> {
         let request = Request::new_with_str_and_init(&url.as_str(), &opts)?;
         request.headers().set("Accept", "application/json")?;
 
@@ -70,7 +69,7 @@ impl WasmFetchWrapper {
         Ok(json)
     }
 
-    async fn _post(&self, url: Url, opts: RequestInit) -> Result<JsValue, JsValue> {
+    async fn _post(&self, url: String, opts: RequestInit) -> Result<JsValue, JsValue> {
         let request = Request::new_with_str_and_init(&url.as_str(), &opts)?;
         request.headers().set("Accept", "application/json")?;
         request.headers().set("Content-Type", "application/json")?;
@@ -93,7 +92,7 @@ impl RequestClient for WasmFetchWrapper {
         })
     }
 
-    async fn get(&self, url: Url) -> Result<String, Box<(dyn Error)>> {
+    async fn get(&self, url: String) -> Result<String, Box<(dyn Error)>> {
         let opts = RequestInit::new();
         opts.set_method("GET");
         opts.set_mode(RequestMode::Cors);
@@ -110,19 +109,17 @@ impl RequestClient for WasmFetchWrapper {
         Ok(json.as_str().to_owned())
     }
 
-    async fn get_with_parameters(&self, mut url: Url, query_parameters: &[(&str, &str)]) -> Result<String, Box<(dyn Error)>> {
+    async fn get_with_parameters(&self, url: String, query_parameters: &[(&str, &str)]) -> Result<String, Box<(dyn Error)>> {
         let opts = RequestInit::new();
         opts.set_method("GET");
         opts.set_mode(RequestMode::Cors);
 
-        let mut query_pairs = url.query_pairs_mut();
-        for (parameter_name, parameter_value) in query_parameters {
-            query_pairs.append_pair(parameter_name, parameter_value);
-        }
-        query_pairs.finish();
-        drop(query_pairs);
+        let url_with_query = match set_query_parameters(url, query_parameters) {
+            Ok(url) => url,
+            Err(js_error) => return Err(Box::<JsErrorWrapper>::new(js_error.into())),
+        };
 
-        let json_value = match self._get(url, opts).await {
+        let json_value = match self._get(url_with_query, opts).await {
             Ok(json) => json.dyn_into::<JsString>().map_err(|not_string_value: JsValue| NotStringError { not_string_value })?,
             Err(js_error) => return Err(Box::<JsErrorWrapper>::new(js_error.into())),
         };
@@ -134,7 +131,7 @@ impl RequestClient for WasmFetchWrapper {
         Ok(json.as_str().to_owned())
     }
 
-    async fn post(&self, url: Url, payload: &Value) -> Result<String, Box<(dyn Error)>> {
+    async fn post(&self, url: String, payload: &Value) -> Result<String, Box<(dyn Error)>> {
         let opts = RequestInit::new();
         opts.set_method("POST");
         opts.set_mode(RequestMode::Cors);
@@ -151,4 +148,14 @@ impl RequestClient for WasmFetchWrapper {
 
         Ok(json.as_str().to_owned())
     }
+}
+
+fn set_query_parameters(url: String, query_parameters: &[(&str, &str)]) -> Result<String, JsValue> {
+    let url_object = Url::new(&url)?;
+    let url_params = UrlSearchParams::new()?;
+    for (parameter_name, parameter_value) in query_parameters {
+        url_params.append(parameter_name, parameter_value);
+    }
+    url_object.set_search(&url_params.to_string().as_string().ok_or(JsString::from("URL params must be a string"))?);
+    Ok(url_object.to_string().as_string().ok_or(JsString::from("URL must be a string"))?)
 }

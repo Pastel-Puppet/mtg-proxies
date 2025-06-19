@@ -1,9 +1,7 @@
 use core::{error::Error as ErrorTrait, fmt::Display};
-use alloc::{boxed::Box, format, string::String, vec::Vec};
+use alloc::{borrow::ToOwned, boxed::Box, format, string::String, vec::Vec};
 use log::{info, warn};
 use serde_json::{from_str, json, Value};
-use url::Url;
-use url_macro::url;
 
 use crate::{api_classes::{ApiObject, Card, Error}, collection_card_identifier::CollectionCardIdentifier};
 
@@ -11,9 +9,9 @@ pub trait RequestClient {
     fn build() -> Result<Self, Box<dyn ErrorTrait>>
         where Self: Sized;
 
-    fn get(&self, url: Url) -> impl core::future::Future<Output = Result<String, Box<dyn ErrorTrait>>>;
-    fn get_with_parameters(&self, url: Url, query_parameters: &[(&str, &str)]) -> impl core::future::Future<Output = Result<String, Box<dyn ErrorTrait>>>;
-    fn post(&self, url: Url, payload: &Value) -> impl core::future::Future<Output = Result<String, Box<dyn ErrorTrait>>>;
+    fn get(&self, url: String) -> impl core::future::Future<Output = Result<String, Box<dyn ErrorTrait>>>;
+    fn get_with_parameters(&self, url: String, query_parameters: &[(&str, &str)]) -> impl core::future::Future<Output = Result<String, Box<dyn ErrorTrait>>>;
+    fn post(&self, url: String, payload: &Value) -> impl core::future::Future<Output = Result<String, Box<dyn ErrorTrait>>>;
 }
 
 #[derive(Debug, Clone)]
@@ -64,7 +62,7 @@ static BULK_DATA_METHOD: &str = "/bulk-data/all-cards";
 pub struct ApiInterface<Client>
     where Client: RequestClient {
     http_client: Client,
-    api_endpoint: Url,
+    api_endpoint: String,
 }
 
 impl<Client> ApiInterface<Client>
@@ -72,7 +70,7 @@ impl<Client> ApiInterface<Client>
     pub fn new() -> Result<Self, Box<dyn ErrorTrait>> {
         Ok(Self {
             http_client: Client::build()?,
-            api_endpoint: url!("https://api.scryfall.com/"),
+            api_endpoint: "https://api.scryfall.com/".to_owned(),
         })
     }
 
@@ -81,24 +79,24 @@ impl<Client> ApiInterface<Client>
 
         let response = match card {
             CollectionCardIdentifier::Id(uuid) => {
-                self.http_client.get(self.api_endpoint.join(format!("{}/{}", SPECIFIED_CARD_METHOD, uuid).as_str())?).await?
+                self.http_client.get(format!("{}/{}/{}", self.api_endpoint, SPECIFIED_CARD_METHOD, uuid)).await?
             },
             CollectionCardIdentifier::MtgoId(id) => {
-                self.http_client.get(self.api_endpoint.join(format!("{}/{}", MTGO_CARD_METHOD, id).as_str())?).await?
+                self.http_client.get(format!("{}/{}/{}", self.api_endpoint, MTGO_CARD_METHOD, id)).await?
             },
             CollectionCardIdentifier::MultiverseId(id) => {
-                self.http_client.get(self.api_endpoint.join(format!("{}/{}", MULTIVERSE_CARD_METHOD, id).as_str())?).await?
+                self.http_client.get(format!("{}/{}/{}", self.api_endpoint, MULTIVERSE_CARD_METHOD, id)).await?
             },
             CollectionCardIdentifier::OracleId(_) |
             CollectionCardIdentifier::IllustrationId(_) => return Err(Box::new(InvalidCardIdentifierError)),
             CollectionCardIdentifier::Name(name) => {
-                self.http_client.get_with_parameters(self.api_endpoint.join(NAMED_CARD_METHOD)?, &[("fuzzy", name)]).await?
+                self.http_client.get_with_parameters(format!("{}/{}", self.api_endpoint, NAMED_CARD_METHOD), &[("fuzzy", name)]).await?
             },
             CollectionCardIdentifier::NameSet((name, set)) => {
-                self.http_client.get_with_parameters(self.api_endpoint.join(NAMED_CARD_METHOD)?, &[("fuzzy", name), ("set", set)]).await?
+                self.http_client.get_with_parameters(format!("{}/{}", self.api_endpoint, NAMED_CARD_METHOD), &[("fuzzy", name), ("set", set)]).await?
             },
             CollectionCardIdentifier::CollectorNumberSet((collector_number, set)) => {
-                self.http_client.get(self.api_endpoint.join(format!("{}/{}/{}", SPECIFIED_CARD_METHOD, set, collector_number).as_str())?).await?
+                self.http_client.get(format!("{}/{}/{}/{}", self.api_endpoint, SPECIFIED_CARD_METHOD, set, collector_number)).await?
             },
         };
 
@@ -117,7 +115,7 @@ impl<Client> ApiInterface<Client>
 
         info!("Sending API request for {} cards", identifiers.len());
 
-        let response = self.http_client.post(self.api_endpoint.join(CARD_COLLECTION_METHOD)?, &identifiers_json).await?;
+        let response = self.http_client.post(format!("{}/{}", self.api_endpoint, CARD_COLLECTION_METHOD), &identifiers_json).await?;
 
         let api_object = from_str(&response)?;
         if let ApiObject::Error(error) = api_object {
@@ -127,7 +125,7 @@ impl<Client> ApiInterface<Client>
         }
     }
 
-    async fn resolve_multi_page_search(&mut self, search_url: Url) -> Result<Vec<ApiObject>, Box<dyn ErrorTrait>> {
+    async fn resolve_multi_page_search(&mut self, search_url: String) -> Result<Vec<ApiObject>, Box<dyn ErrorTrait>> {
         info!("Sending API request for next page of results");
 
         let response = self.http_client.get(search_url).await?;
@@ -154,11 +152,11 @@ impl<Client> ApiInterface<Client>
             return Ok(current_page.data);
         };
 
-        current_page.data.append(&mut Box::pin(self.resolve_multi_page_search(Url::parse(&next_page_url)?)).await?);
+        current_page.data.append(&mut Box::pin(self.resolve_multi_page_search(next_page_url)).await?);
         Ok(current_page.data)
     }
 
-    pub async fn get_all_printings(&mut self, prints_search_uri: Url, card_name: String) -> Result<Vec<Card>, Box<dyn ErrorTrait>> {
+    pub async fn get_all_printings(&mut self, prints_search_uri: String, card_name: String) -> Result<Vec<Card>, Box<dyn ErrorTrait>> {
         info!("Sending API request for all printings of {}", card_name);
 
         let search_results = self.resolve_multi_page_search(prints_search_uri).await?;
@@ -178,7 +176,7 @@ impl<Client> ApiInterface<Client>
     async fn get_bulk_data_endpoint(&mut self) -> Result<ApiObject, Box<dyn ErrorTrait>> {
         info!("Sending API request for bulk data endpoints");
 
-        let response = self.http_client.get(self.api_endpoint.join(BULK_DATA_METHOD)?).await?;
+        let response = self.http_client.get(format!("{}/{}", self.api_endpoint, BULK_DATA_METHOD)).await?;
 
         let api_object = from_str(&response)?;
         if let ApiObject::Error(error) = api_object {
@@ -195,7 +193,7 @@ impl<Client> ApiInterface<Client>
         };
 
         info!("Sending API request for bulk data");
-        let response = self.http_client.get(Url::parse(&bulk_data_endpoint.download_uri)?).await?;
+        let response = self.http_client.get(bulk_data_endpoint.download_uri).await?;
 
         Ok(response)
     }

@@ -14,7 +14,6 @@ hashbrown = "0.15.4"
 log = "0.4.27"
 scryfall = { path = "../scryfall", features = ["wasm"] }
 talc = "4.4.3"
-url = { version = "2.5.4", default-features = false }
 wasm-bindgen = { version = "0.2.100", features = ["msrv"], default-features = false }
 wasm-bindgen-futures = { version = "0.4.50", default-features = false }
 

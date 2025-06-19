@@ -10,4 +10,3 @@ colog = "1.3.0"
 log = "0.4.27"
 scryfall = { path = "../scryfall", features = ["std"] }
 tokio = { version = "1.45.1", features = ["full"] }
-url = { version = "2.5.4" }

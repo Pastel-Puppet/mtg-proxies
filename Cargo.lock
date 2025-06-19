@@ -1049,7 +1049,6 @@ dependencies = [
  "log",
  "scryfall",
  "tokio",
- "url",
 ]
 
 [[package]]
@@ -1295,8 +1294,6 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "url",
- "url-macro",
  "uuid",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -1659,15 +1656,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "url-macro"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0f1c96f9093a012822c49bd933852d5dfb8bff6d1cce079d3ba4ac5cc59e3e7"
-dependencies = [
- "url",
-]
-
-[[package]]
 name = "utf8_iter"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1807,7 +1795,6 @@ dependencies = [
  "log",
  "scryfall",
  "talc",
- "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",

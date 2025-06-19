@@ -5,5 +5,6 @@ export default defineConfig({
     base: "https://mtg-proxies.pastel-puppet.workers.dev/",
     build: {
         target: "esnext",
+        assetsInlineLimit: 10240, 
     },
 })

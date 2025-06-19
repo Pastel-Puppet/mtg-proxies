@@ -2,4 +2,4 @@ name = "mtg-proxies"
 compatibility_date = "2025-06-05"
 
 [assets]
-directory = "www"
+directory = "www/dist"

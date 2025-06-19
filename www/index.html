@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en-GB">
   <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
     <title>MTG Proxy Generator</title>
 
     <link href="style.css" rel="stylesheet" media="screen">
@@ -8,18 +9,17 @@
     <link href="favicon.ico" rel="icon" type="image/x-icon">
     <link href="https://mtg-proxies.pastel-puppet.workers.dev" rel="canonical">
 
-    <link href="wasm_proxies_bg.wasm" rel="preload" as="fetch" type="application/wasm" crossorigin="anonymous">
+    <link href="../wasm_proxies/pkg/wasm_proxies_bg.wasm" rel="preload" as="fetch" type="application/wasm" crossorigin="anonymous">
     <link href="https://api.scryfall.com/" rel="dns-prefetch" crossorigin="anonymous">
     <link href="https://cards.scryfall.com/" rel="dns-prefetch" crossorigin="anonymous">
 
-    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Proxy generator and printer for Magic: The Gathering decks, supporting deck list formats from Scryfall, Deckstats, Moxfield, and more.">
 
     <meta property="og:title" content="MTG Proxy Generator">
     <meta property="og:description" content="Proxy generator and printer for Magic: The Gathering decks, supporting deck list formats from Scryfall, Deckstats, Moxfield, and more.">
     <meta property="og:url" content="https://mtg-proxies.pastel-puppet.workers.dev">
-    <meta property="og:image" content="https://mtg-proxies.pastel-puppet.workers.dev/mtg-proxies.png">
+    <meta property="og:image" content="mtg-proxies.png">
     <meta property="og:locale" content="en_GB">
     <meta property="og:type" content="website">
   </head>
@@ -28,7 +28,7 @@
     <!-- Dummy script tag to prevent FOUC -->
     <script>0</script>
     
-    <script type="module" src="bundle.js"></script>
+    <script type="module" src="../wasm_proxies/interface.js"></script>
 
     <div id="loading-overlay" class="overlay">
       <span id="loader"></span>

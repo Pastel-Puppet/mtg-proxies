@@ -1,5 +1,7 @@
 use std::error::Error;
 use reqwest::{Client, header::ACCEPT};
+use governor::{DefaultDirectRateLimiter, Quota, RateLimiter};
+use nonzero_ext::nonzero;
 use serde_json::Value;
 use url::Url;
 
@@ -12,23 +14,24 @@ static APP_USER_AGENT: &str = concat!(
 );
 
 pub struct ReqwestWrapper {
-    client: Client
+    client: Client,
+    rate_limiter: DefaultDirectRateLimiter,
 }
 
 impl RequestClient for ReqwestWrapper {
     fn build() -> Result<ReqwestWrapper, Box<(dyn Error)>> {
         let mut builder = Client::builder();
-
-        if cfg!(not(target_family = "wasm")) {
-            builder = builder.user_agent(APP_USER_AGENT);
-        }
+        builder = builder.user_agent(APP_USER_AGENT);
 
         Ok(Self {
             client: builder.build()?,
+            rate_limiter: RateLimiter::direct(Quota::per_second(nonzero!(10_u32))),
         })
     }
 
     async fn get(&self, url: Url) -> Result<String, Box<(dyn Error)>> {
+        self.rate_limiter.until_ready().await;
+
         let response = self.client.get(url)
             .header(ACCEPT, "application/json")
             .send().await?
@@ -38,6 +41,8 @@ impl RequestClient for ReqwestWrapper {
     }
 
     async fn get_with_parameters(&self, url: Url, query_parameters: &[(&str, &str)]) -> Result<String, Box<(dyn Error)>> {
+        self.rate_limiter.until_ready().await;
+
         let mut request = self.client.get(url);
 
         if !query_parameters.is_empty() {
@@ -53,6 +58,8 @@ impl RequestClient for ReqwestWrapper {
     }
 
     async fn post(&self, url: Url, payload: &Value) -> Result<String, Box<(dyn Error)>> {
+        self.rate_limiter.until_ready().await;
+
         let response = self.client.post(url)
             .json(payload)
             .header(ACCEPT, "application/json")

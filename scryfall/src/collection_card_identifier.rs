@@ -1,3 +1,4 @@
+use alloc::string::String;
 use uuid::Uuid;
 use serde::{ser::SerializeStruct, Serialize};
 

@@ -1,7 +1,6 @@
-use std::{error::Error as ErrorTrait, fmt::Display};
-use governor::{DefaultDirectRateLimiter, Quota, RateLimiter};
+use core::{error::Error as ErrorTrait, fmt::Display};
+use alloc::{boxed::Box, format, string::String, vec::Vec};
 use log::{info, warn};
-use nonzero_ext::nonzero;
 use serde_json::{from_str, json, Value};
 use url::Url;
 use url_macro::url;
@@ -12,16 +11,16 @@ pub trait RequestClient {
     fn build() -> Result<Self, Box<dyn ErrorTrait>>
         where Self: Sized;
 
-    fn get(&self, url: Url) -> impl std::future::Future<Output = Result<String, Box<dyn ErrorTrait>>>;
-    fn get_with_parameters(&self, url: Url, query_parameters: &[(&str, &str)]) -> impl std::future::Future<Output = Result<String, Box<dyn ErrorTrait>>>;
-    fn post(&self, url: Url, payload: &Value) -> impl std::future::Future<Output = Result<String, Box<dyn ErrorTrait>>>;
+    fn get(&self, url: Url) -> impl core::future::Future<Output = Result<String, Box<dyn ErrorTrait>>>;
+    fn get_with_parameters(&self, url: Url, query_parameters: &[(&str, &str)]) -> impl core::future::Future<Output = Result<String, Box<dyn ErrorTrait>>>;
+    fn post(&self, url: Url, payload: &Value) -> impl core::future::Future<Output = Result<String, Box<dyn ErrorTrait>>>;
 }
 
 #[derive(Debug, Clone)]
 pub struct InvalidCardIdentifierError;
 
 impl Display for InvalidCardIdentifierError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Oracle IDs and illustration IDs cannot be used to retrieve specific cards")
     }
 }
@@ -34,7 +33,7 @@ pub struct ApiError {
 }
 
 impl Display for ApiError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Received an error from an API request:\n{:?}", self.error)
     }
 }
@@ -48,7 +47,7 @@ pub struct InvalidApiObjectError {
 }
 
 impl Display for InvalidApiObjectError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Expected {}, received from the API:\n{:?}", self.expected, self.received)
     }
 }
@@ -66,7 +65,6 @@ pub struct ApiInterface<Client>
     where Client: RequestClient {
     http_client: Client,
     api_endpoint: Url,
-    rate_limiter: DefaultDirectRateLimiter,
 }
 
 impl<Client> ApiInterface<Client>
@@ -75,13 +73,10 @@ impl<Client> ApiInterface<Client>
         Ok(Self {
             http_client: Client::build()?,
             api_endpoint: url!("https://api.scryfall.com/"),
-            rate_limiter: RateLimiter::direct(Quota::per_second(nonzero!(10_u32))),
         })
     }
 
     pub async fn get_card(&mut self, card: &CollectionCardIdentifier) -> Result<ApiObject, Box<dyn ErrorTrait>> {
-        self.rate_limiter.until_ready().await;
-
         info!("Sending API request for card {:?}", card);
 
         let response = match card {
@@ -120,8 +115,6 @@ impl<Client> ApiInterface<Client>
             "identifiers": identifiers
         });
 
-        self.rate_limiter.until_ready().await;
-
         info!("Sending API request for {} cards", identifiers.len());
 
         let response = self.http_client.post(self.api_endpoint.join(CARD_COLLECTION_METHOD)?, &identifiers_json).await?;
@@ -135,8 +128,6 @@ impl<Client> ApiInterface<Client>
     }
 
     async fn resolve_multi_page_search(&mut self, search_url: Url) -> Result<Vec<ApiObject>, Box<dyn ErrorTrait>> {
-        self.rate_limiter.until_ready().await;
-
         info!("Sending API request for next page of results");
 
         let response = self.http_client.get(search_url).await?;
@@ -163,7 +154,7 @@ impl<Client> ApiInterface<Client>
             return Ok(current_page.data);
         };
 
-        current_page.data.append(&mut Box::pin(self.resolve_multi_page_search(next_page_url)).await?);
+        current_page.data.append(&mut Box::pin(self.resolve_multi_page_search(Url::parse(&next_page_url)?)).await?);
         Ok(current_page.data)
     }
 
@@ -185,8 +176,6 @@ impl<Client> ApiInterface<Client>
     }
 
     async fn get_bulk_data_endpoint(&mut self) -> Result<ApiObject, Box<dyn ErrorTrait>> {
-        self.rate_limiter.until_ready().await;
-
         info!("Sending API request for bulk data endpoints");
 
         let response = self.http_client.get(self.api_endpoint.join(BULK_DATA_METHOD)?).await?;
@@ -206,7 +195,7 @@ impl<Client> ApiInterface<Client>
         };
 
         info!("Sending API request for bulk data");
-        let response = self.http_client.get(bulk_data_endpoint.download_uri).await?;
+        let response = self.http_client.get(Url::parse(&bulk_data_endpoint.download_uri)?).await?;
 
         Ok(response)
     }

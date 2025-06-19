@@ -1,7 +1,10 @@
-use std::{collections::{HashMap, HashSet}, error::Error, fs::File, hash::RandomState, io::{BufReader, Read}};
+#[cfg(feature = "std")]
+use std::{fs::File, io::{BufReader, Read}};
+use core::error::Error;
+use alloc::{boxed::Box, string::{String, ToString}, vec::Vec};
+use hashbrown::{HashMap, HashSet};
 use log::error;
-use serde_json::{from_reader, from_str};
-use url::Url;
+use serde_json::from_str;
 
 use crate::{api_classes::{Card, Deck}, collection_card_identifier::CollectionCardIdentifier, fetch_card_list::ResolvedCard};
 
@@ -12,14 +15,14 @@ pub struct DeckDiff {
 }
 
 pub fn deck_diff(old_deck: Vec<ResolvedCard>, new_deck: Vec<ResolvedCard>) -> DeckDiff {
-    let new_cards_set: HashSet<ResolvedCard, RandomState> = HashSet::from_iter(new_deck.iter().flat_map(|card| {
+    let new_cards_set: HashSet<ResolvedCard> = HashSet::from_iter(new_deck.iter().flat_map(|card| {
         let mut cards = Vec::new();
         for i in 0..card.count {
             cards.push(ResolvedCard { count: i, card: card.card.clone() });
         }
         cards
     }));
-    let old_cards_set: HashSet<ResolvedCard, RandomState> = HashSet::from_iter(old_deck.iter().flat_map(|card| {
+    let old_cards_set: HashSet<ResolvedCard> = HashSet::from_iter(old_deck.iter().flat_map(|card| {
         let mut cards = Vec::new();
         for i in 0..card.count {
             cards.push(ResolvedCard { count: i, card: card.card.clone() });
@@ -82,6 +85,7 @@ fn parse_txt_line(line: String) -> Option<(CollectionCardIdentifier, usize)> {
     }
 }
 
+#[cfg(feature = "std")]
 pub fn parse_txt_file(file: &File) -> Result<HashMap<CollectionCardIdentifier, usize>, Box<dyn Error>> {
     let mut deck_file = String::new();
     let mut buffered_reader = BufReader::new(file);
@@ -102,6 +106,7 @@ pub fn parse_txt_data(txt_data: &str) -> Result<HashMap<CollectionCardIdentifier
     Ok(cards)
 }
 
+#[cfg(feature = "std")]
 pub fn parse_json_file(file: &File) -> Result<HashMap<CollectionCardIdentifier, usize>, Box<dyn Error>> {
     let mut deck_file = String::new();
     let mut buffered_reader = BufReader::new(file);
@@ -134,11 +139,12 @@ pub fn parse_json_data(json_data: &str) -> Result<HashMap<CollectionCardIdentifi
     Ok(card_map)
 }
 
-pub fn images_from_json_file(file: &File, exclude_basic_lands: bool) -> Result<Vec<(Url, usize)>, Box<dyn Error>> {
+#[cfg(feature = "std")]
+pub fn images_from_json_file(file: &File, exclude_basic_lands: bool) -> Result<Vec<(String, usize)>, Box<dyn Error>> {
     let mut image_list = Vec::new();
 
     let buffered_reader = BufReader::new(file);
-    let deck: Deck = from_reader(buffered_reader)?;
+    let deck: Deck = serde_json::from_reader(buffered_reader)?;
 
     for (section_name, deck_section) in deck.entries.iter() {
         if section_name == "maybeboard" {

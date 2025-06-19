@@ -1,4 +1,6 @@
-use std::{collections::HashMap, error::Error, fmt::Display, hash::RandomState};
+use core::{error::Error, fmt::Display};
+use alloc::{boxed::Box, format, string::String, vec::Vec};
+use hashbrown::HashMap;
 
 use log::warn;
 
@@ -17,7 +19,7 @@ pub struct CardParseError {
 }
 
 impl Display for CardParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match &self.cause {
             CardParseErrorCause::ObjectNotCard(object) => write!(f, "API returned object other than a card:\n{:?}", object),
             CardParseErrorCause::ObjectNotList(object) => write!(f, "API returned object other than a list:\n{:?}", object),
@@ -35,19 +37,19 @@ pub struct ResolvedCard {
 }
 
 impl PartialOrd for ResolvedCard {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl Ord for ResolvedCard {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         self.card.cmp(&other.card)
     }
 }
 
 impl Display for ResolvedCard {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{} {}", self.count, self.card.name)
     }
 }
@@ -167,12 +169,23 @@ pub async fn resolve_cards<Client: RequestClient>(card_map: &mut HashMap<Collect
     for not_found_card in not_found_cards_list {
         let resolved_card = fuzzy_resolve(card_map, api_interface, &CollectionCardIdentifier::Name(not_found_card.name.clone())).await?;
         warn!("{} did not match any card, using closest match: {}", not_found_card.name, resolved_card.card.name);
+        
+        if fetch_related_tokens {
+            if let Some(related_cards) = &resolved_card.card.all_parts {
+                for related_card in related_cards {
+                    if related_card.is_token() {
+                        related_tokens.insert(CollectionCardIdentifier::Id(related_card.id), 1);
+                    }
+                }
+            }
+        }
+
         resolved_cards.push(resolved_card);
     }
 
     if fetch_related_tokens {
         let tokens = Box::pin(resolve_cards(&mut related_tokens, false, api_interface)).await?;
-        let token_oracle_ids: HashMap<uuid::Uuid, ResolvedCard, RandomState> = HashMap::from_iter(tokens.into_iter().filter_map(|card| {
+        let token_oracle_ids: HashMap<uuid::Uuid, ResolvedCard> = HashMap::from_iter(tokens.into_iter().filter_map(|card| {
             if let Some(oracle_id) = card.card.oracle_id {
                 Some((oracle_id, card))
             } else {

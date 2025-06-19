@@ -1,7 +1,7 @@
-use std::{cmp::Ordering, collections::HashMap, hash::Hash};
+use core::{cmp::Ordering, hash::{Hasher, Hash}};
+use alloc::{boxed::Box, string::String, vec::Vec};
+use hashbrown::HashMap;
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
-use url::Url;
 use uuid::Uuid;
 
 use crate::token_handling::Token;
@@ -35,7 +35,7 @@ pub struct List {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub has_more: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub next_page: Option<Url>,
+    pub next_page: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub total_cards: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -77,10 +77,10 @@ pub struct Card {
     pub layout: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub oracle_id: Option<Uuid>,
-    pub prints_search_uri: Url,
-    pub rulings_uri: Url,
-    pub scryfall_uri: Url,
-    pub uri: Url,
+    pub prints_search_uri: String,
+    pub rulings_uri: String,
+    pub scryfall_uri: String,
+    pub uri: String,
 
     // Gameplay fields.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -170,16 +170,16 @@ pub struct Card {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub promo_types: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub purchase_uris: Option<HashMap<String, Url>>,
+    pub purchase_uris: Option<HashMap<String, String>>,
     pub rarity: String,
-    pub related_uris: HashMap<String, Url>,
+    pub related_uris: HashMap<String, String>,
     pub released_at: String,
     pub reprint: bool,
-    pub scryfall_set_uri: Url,
+    pub scryfall_set_uri: String,
     pub set_name: String,
-    pub set_search_uri: Url,
+    pub set_search_uri: String,
     pub set_type: String,
-    pub set_uri: Url,
+    pub set_uri: String,
     pub set: String,
     pub set_id: Uuid,
     pub story_spotlight: bool,
@@ -196,7 +196,7 @@ pub struct Card {
 }
 
 impl Hash for Card {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    fn hash<H: Hasher>(&self, state: &mut H) {
         self.id.hash(state);
     }
 }
@@ -284,17 +284,17 @@ pub struct RelatedCard {
     pub component: String,
     pub name: String,
     pub type_line: String,
-    pub uri: Url,
+    pub uri: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ImageUris {
-    pub small: Url,
-    pub normal: Url,
-    pub large: Url,
-    pub art_crop: Url,
-    pub border_crop: Url,
-    pub png: Url,
+    pub small: String,
+    pub normal: String,
+    pub large: String,
+    pub art_crop: String,
+    pub border_crop: String,
+    pub png: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -304,8 +304,8 @@ pub struct Deck {
     pub name: String,
     pub format: String,
     pub layout: String,
-    pub uri: Url,
-    pub scryfall_uri: Url,
+    pub uri: String,
+    pub scryfall_uri: String,
     pub description: Option<String>,
     pub trashed: bool,
     pub in_compliance: bool,
@@ -341,7 +341,7 @@ pub struct CardDigest {
     pub id: Uuid,
     pub oracle_id: Uuid,
     pub name: String,
-    pub scryfall_uri: Url,
+    pub scryfall_uri: String,
     pub mana_cost: String,
     pub type_line: String,
     pub collector_number: String,
@@ -351,9 +351,9 @@ pub struct CardDigest {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DeckImageUris {
-    pub front: Url,
+    pub front: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub back: Option<Url>,
+    pub back: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -362,13 +362,12 @@ pub struct BulkData {
     pub id: Uuid,
     #[serde(rename = "type")]
     pub bulk_type: String,
-    #[serde(with = "time::serde::iso8601")]
-    pub updated_at: OffsetDateTime,
-    pub uri: Url,
+    pub updated_at: String,
+    pub uri: String,
     pub name: String,
     pub description: String,
     pub size: usize,
-    pub download_uri: Url,
+    pub download_uri: String,
     pub content_type: String,
     pub content_encoding: String,
 }

@@ -1,10 +1,26 @@
-use std::{collections::HashMap, fmt::Display, str::FromStr};
-use log::{error, Level};
+#![no_std]
+extern crate alloc;
+
+mod logging;
+
+use core::{fmt::Display, str::FromStr, arch::wasm32::unreachable};
+use alloc::{borrow::ToOwned, format, string::{String, ToString}, vec::Vec};
+use hashbrown::HashMap;
+use log::error;
 use url::Url;
 use wasm_bindgen::prelude::*;
 use web_sys::{js_sys::{Array, Function, JsString}, window, Document, HtmlDivElement, HtmlImageElement, HtmlInputElement, HtmlTextAreaElement};
 
-use scryfall::{api_classes::Card, api_interface::ApiInterface, card_images_helper::{extract_images, ImageUriType}, collection_card_identifier::CollectionCardIdentifier, deck_formats::{deck_diff, parse_json_data, parse_txt_data}, fetch_card_list::resolve_cards, reqwest_wrapper::ReqwestWrapper};
+use scryfall::{api_classes::Card, api_interface::ApiInterface, card_images_helper::{extract_images, ImageUriType}, collection_card_identifier::CollectionCardIdentifier, deck_formats::{deck_diff, parse_json_data, parse_txt_data}, fetch_card_list::resolve_cards, wasm_fetch_wrapper::WasmFetchWrapper};
+use crate::logging::WasmLogger;
+
+#[global_allocator]
+static ALLOCATOR: talc::TalckWasm = unsafe { talc::TalckWasm::new_global() };
+
+#[panic_handler]
+fn panic(_panic: &core::panic::PanicInfo<'_>) -> ! {
+    unreachable()
+}
 
 const DECK_LIST_TEXTBOX_ID: &str = "deck-list";
 const OLD_DECK_LIST_TEXTBOX_ID: &str = "old-deck-list";
@@ -127,7 +143,7 @@ pub struct CardClickedData {
 }
 
 async fn add_proxy_images_from_deck_list(mut user_options: UserOptions, document: &Document, card_click_callback: Function) -> Result<(), JsValue> {
-    let mut interface = ApiInterface::<ReqwestWrapper>::new()
+    let mut interface = ApiInterface::<WasmFetchWrapper>::new()
         .map_err(rust_error_to_js)?;
 
     let deck_cards = resolve_cards(&mut user_options.deck_list, user_options.include_tokens, &mut interface).await
@@ -351,7 +367,7 @@ pub async fn get_printings_for_card(search_url: String, current_printing_image: 
         return Err("Could not find root document object".into());
     };
     
-    let mut interface = ApiInterface::<ReqwestWrapper>::new()
+    let mut interface = ApiInterface::<WasmFetchWrapper>::new()
         .map_err(rust_error_to_js)?;
 
     let card_printings = interface.get_all_printings(Url::from_str(&search_url).map_err(rust_error_to_js)?, card_name).await
@@ -364,8 +380,8 @@ pub async fn get_printings_for_card(search_url: String, current_printing_image: 
 // Called when the Wasm module is instantiated
 #[wasm_bindgen(start)]
 fn initialise() -> Result<(), JsValue> {
-    console_log::init_with_level(Level::Debug)
-        .map_err(rust_error_to_js)?;
+    log::set_max_level(log::LevelFilter::Debug);
+    log::set_logger(&WasmLogger {}).map_err(rust_error_to_js)?;
 
     Ok(())
 }

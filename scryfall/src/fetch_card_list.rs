@@ -21,8 +21,8 @@ pub struct CardParseError {
 impl Display for CardParseError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match &self.cause {
-            CardParseErrorCause::ObjectNotCard(object) => write!(f, "API returned object other than a card:\n{:?}", object),
-            CardParseErrorCause::ObjectNotList(object) => write!(f, "API returned object other than a list:\n{:?}", object),
+            CardParseErrorCause::ObjectNotCard(object) => write!(f, "API returned object other than a card:\n{}", object),
+            CardParseErrorCause::ObjectNotList(object) => write!(f, "API returned object other than a list:\n{}", object),
             CardParseErrorCause::CardCountNotFound(identifier) => write!(f, "Card {} could not be found in unresolved list", identifier),
         }
     }
@@ -97,7 +97,7 @@ fn get_count_for_card_identifier(card_map: &HashMap<CollectionCardIdentifier, us
         Some(count) => Some(*count),
         None => {
             if use_default {
-                warn!("Could not find card {:?} on the deck list, assuming it has one copy", card_identifier);
+                warn!("Could not find card {} on the deck list, assuming it has one copy", card_identifier);
                 Some(1)
             } else {
                 None
@@ -108,7 +108,7 @@ fn get_count_for_card_identifier(card_map: &HashMap<CollectionCardIdentifier, us
 
 async fn fuzzy_resolve<Client: RequestClient>(card_map: &mut HashMap<CollectionCardIdentifier, usize>, api_interface: &mut ApiInterface<Client>, identifier: &CollectionCardIdentifier) -> Result<ResolvedCard, Box<dyn Error>> {
     let Some(count) = get_count_for_card_identifier(card_map, identifier, true) else {
-        return Err(Box::new(CardParseError { cause: CardParseErrorCause::CardCountNotFound(format!("{:?}", identifier)) }));
+        return Err(Box::new(CardParseError { cause: CardParseErrorCause::CardCountNotFound(format!("{}", identifier)) }));
     };
 
     let object = api_interface.get_card(identifier).await?;
@@ -169,7 +169,7 @@ pub async fn resolve_cards<Client: RequestClient>(card_map: &mut HashMap<Collect
     for not_found_card in not_found_cards_list {
         let resolved_card = fuzzy_resolve(card_map, api_interface, &CollectionCardIdentifier::Name(not_found_card.name.clone())).await?;
         warn!("{} did not match any card, using closest match: {}", not_found_card.name, resolved_card.card.name);
-        
+
         if fetch_related_tokens {
             if let Some(related_cards) = &resolved_card.card.all_parts {
                 for related_card in related_cards {

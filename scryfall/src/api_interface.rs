@@ -32,7 +32,7 @@ pub struct ApiError {
 
 impl Display for ApiError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Received an error from an API request:\n{:?}", self.error)
+        write!(f, "Received an error from an API request:\n{}", self.error)
     }
 }
 
@@ -46,7 +46,7 @@ pub struct InvalidApiObjectError {
 
 impl Display for InvalidApiObjectError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Expected {}, received from the API:\n{:?}", self.expected, self.received)
+        write!(f, "Expected {}, received from the API:\n{}", self.expected, self.received)
     }
 }
 
@@ -75,7 +75,7 @@ impl<Client> ApiInterface<Client>
     }
 
     pub async fn get_card(&mut self, card: &CollectionCardIdentifier) -> Result<ApiObject, Box<dyn ErrorTrait>> {
-        info!("Sending API request for card {:?}", card);
+        info!("Sending API request for card {}", card);
 
         let response = match card {
             CollectionCardIdentifier::Id(uuid) => {

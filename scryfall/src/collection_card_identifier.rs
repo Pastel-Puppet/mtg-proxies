@@ -1,4 +1,5 @@
-use alloc::string::String;
+use core::fmt::Display;
+use alloc::{borrow::ToOwned, string::{String, ToString}};
 use uuid::Uuid;
 use serde::{ser::SerializeStruct, Serialize};
 
@@ -12,6 +13,23 @@ pub enum CollectionCardIdentifier {
     Name(String),
     NameSet((String, String)),
     CollectorNumberSet((String, String)),
+}
+
+impl Display for CollectionCardIdentifier {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let text = match self {
+            CollectionCardIdentifier::Id(uuid) => "Id(".to_owned() + &uuid.to_string() + ")",
+            CollectionCardIdentifier::MtgoId(id) => "MtgoId(".to_owned() + &id.to_string() + ")",
+            CollectionCardIdentifier::MultiverseId(id) => "MultiverseId(".to_owned() + &id.to_string() + ")",
+            CollectionCardIdentifier::OracleId(uuid) => "OracleId(".to_owned() + &uuid.to_string() + ")",
+            CollectionCardIdentifier::IllustrationId(uuid) => "IllustrationId(".to_owned() + &uuid.to_string() + ")",
+            CollectionCardIdentifier::Name(name) => "Name(".to_owned() + &name.to_string() + ")",
+            CollectionCardIdentifier::NameSet((name, set)) => "NameSet(".to_owned() + name + ", " + set + ")",
+            CollectionCardIdentifier::CollectorNumberSet((collector_number, set)) => "CollectorNumberSet(".to_owned() + collector_number + ", " + set + ")",
+        };
+
+        write!(f, "{}", text)
+    }
 }
 
 impl Serialize for CollectionCardIdentifier {

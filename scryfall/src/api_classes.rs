@@ -1,5 +1,5 @@
-use core::{cmp::Ordering, hash::{Hasher, Hash}};
-use alloc::{boxed::Box, string::String, vec::Vec};
+use core::{cmp::Ordering, fmt::Display, hash::{Hash, Hasher}};
+use alloc::{borrow::ToOwned, boxed::Box, string::{String, ToString}, vec::Vec};
 use hashbrown::HashMap;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -21,9 +21,33 @@ pub enum ApiObject {
     BulkData(Box<BulkData>),
 }
 
+impl Display for ApiObject {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let text = match self {
+            ApiObject::Error(error) => "Error(".to_owned() + &error.to_string() + ")",
+            ApiObject::List(list) => "List(".to_owned() + &list.to_string() + ")",
+            ApiObject::Card(card) => "Card(".to_owned() + &card.to_string() + ")",
+            ApiObject::CardFace(card_face) => "CardFace(".to_owned() + &card_face.to_string() + ")",
+            ApiObject::RelatedCard(related_card) => "RelatedCard(".to_owned() + &related_card.to_string() + ")",
+            ApiObject::Deck(deck) => "Deck(".to_owned() + &deck.to_string() + ")",
+            ApiObject::DeckEntry(deck_entry) => "DeckEntry(".to_owned() + &deck_entry.to_string() + ")",
+            ApiObject::CardDigest(card_digest) => "CardDigest(".to_owned() + &card_digest.to_string() + ")",
+            ApiObject::BulkData(bulk_data) => "BulkData(".to_owned() + &bulk_data.to_string() + ")",
+        };
+
+        write!(f, "{}", text)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CardNotFound {
     pub name: String,
+}
+
+impl Display for CardNotFound {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.name)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -42,6 +66,13 @@ pub struct List {
     pub warnings: Option<Vec<String>>,
 }
 
+impl Display for List {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let text = "[".to_owned() + &self.data.iter().map(|data: &ApiObject| data.to_string()).collect::<Vec<String>>().join(", ") + "]";
+        write!(f, "{}", text)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename = "error")]
 pub struct Error {
@@ -53,6 +84,26 @@ pub struct Error {
     pub error_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub warnings: Option<String>,
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let text = if let Some(warnings) = &self.warnings {
+            if let Some(error_type) = &self.error_type {
+                "type: ".to_owned() + error_type + ", warnings: " + warnings + ", details: " + &self.details
+            } else {
+                "warnings: ".to_owned() + warnings + ", details: " + &self.details
+            }
+        } else {
+            if let Some(error_type) = &self.error_type {
+                "type: ".to_owned() + error_type + ", details: " + &self.details
+            } else {
+                "details: ".to_owned() + &self.details
+            }
+        };
+
+        write!(f, "{}", text)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -195,6 +246,13 @@ pub struct Card {
     pub preview: Option<HashMap<String, String>>,
 }
 
+impl Display for Card {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let text = self.name.clone() + " (" + &self.set + ") " + &self.collector_number;
+        write!(f, "{}", text)
+    }
+}
+
 impl Hash for Card {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.id.hash(state);
@@ -277,6 +335,13 @@ pub struct CardFace {
     pub watermark: Option<String>,
 }
 
+impl Display for CardFace {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let text = &self.name;
+        write!(f, "{}", text)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename = "related_card")]
 pub struct RelatedCard {
@@ -285,6 +350,13 @@ pub struct RelatedCard {
     pub name: String,
     pub type_line: String,
     pub uri: String,
+}
+
+impl Display for RelatedCard {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let text = &self.name;
+        write!(f, "{}", text)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -313,6 +385,13 @@ pub struct Deck {
     pub entries: HashMap<String, Vec<DeckEntry>>,
 }
 
+impl Display for Deck {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let text = &self.name;
+        write!(f, "{}", text)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename = "deck_entry")]
 pub struct DeckEntry {
@@ -328,11 +407,27 @@ pub struct DeckEntry {
     pub card_digest: Option<CardDigest>,
 }
 
+impl Display for DeckEntry {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let text = &self.raw_text;
+        write!(f, "{}", text)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum Finish {
     NoFinish(bool),
     Finish(String),
+}
+
+impl Display for Finish {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Finish::NoFinish(_) => write!(f, "no finish"),
+            Finish::Finish(finish) => write!(f, "{}", finish),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -347,6 +442,13 @@ pub struct CardDigest {
     pub collector_number: String,
     pub set: String,
     pub image_uris: DeckImageUris,
+}
+
+impl Display for CardDigest {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let text = self.name.clone() + " (" + &self.set + ") " + &self.collector_number;
+        write!(f, "{}", text)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -370,4 +472,11 @@ pub struct BulkData {
     pub download_uri: String,
     pub content_type: String,
     pub content_encoding: String,
+}
+
+impl Display for BulkData {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let text = &self.name;
+        write!(f, "{}", text)
+    }
 }

@@ -1,3 +1,6 @@
 [unstable]
 build-std = ["panic_abort", "alloc", "core"]
 build-std-features = ["panic_immediate_abort", "optimize_for_size"]
+
+[build]
+rustflags = ["-Zlocation-detail=none", "-Zfmt-debug=none"]

@@ -8,6 +8,7 @@
   "devDependencies": {
     "rust": "^1.0.8-nightly",
     "vite": "^6.3.5",
+    "vite-plugin-html-minifier": "^1.0.5",
     "wasm-pack": "^0.13.1"
   },
   "private": true

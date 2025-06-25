@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import htmlMinifier from 'vite-plugin-html-minifier';
 
 export default defineConfig({
     root: "www",
@@ -7,4 +8,9 @@ export default defineConfig({
         target: "esnext",
         assetsInlineLimit: 10240, 
     },
+    plugins: [
+        htmlMinifier({
+            minify: true,
+        }),
+    ],
 })

@@ -1,6 +1,5 @@
 {
   "type": "module",
-  "main": "assets/interface.js",
   "scripts": {
     "prebuild": "wasm-pack build --target web --no-typescript --no-pack --out-dir pkg wasm_proxies",
     "build": "vite build"

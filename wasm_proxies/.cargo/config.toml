@@ -6,7 +6,4 @@ build-std-features = ["panic_immediate_abort", "optimize_for_size"]
 rustflags = [
     "-Zlocation-detail=none",
     "-Zfmt-debug=none",
-    "-Ctarget-feature=+extended-const",
-    "-Ctarget-feature=+simd128",
-    "-Ctarget-feature=+tail-call",
 ]

@@ -325,7 +325,10 @@ function updatePrintButton() {
 }
 
 toggleDeckDiff();
-await init();
+await init().catch((error) => {
+    console.error(error);
+    window.alert(`Could not initialise WebAssembly module, ensure your browser supports WebAssembly\n${error}`);
+});
 
 document.getElementById("proxies-txt-button").addEventListener("click", proxiesTxtButtonClicked);
 document.getElementById("proxies-file-button").addEventListener("click", proxiesFileButtonClicked);

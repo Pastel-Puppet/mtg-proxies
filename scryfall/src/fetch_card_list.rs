@@ -1,4 +1,4 @@
-use core::{error::Error, fmt::Display, pin::Pin};
+use core::{error::Error, fmt::Display};
 use alloc::{boxed::Box, format, string::String, vec::Vec};
 use futures::{stream::FuturesUnordered, StreamExt};
 use hashbrown::HashMap;
@@ -21,9 +21,9 @@ pub struct CardParseError {
 impl Display for CardParseError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match &self.cause {
-            CardParseErrorCause::ObjectNotCard(object) => write!(f, "API returned object other than a card:\n{}", object),
-            CardParseErrorCause::ObjectNotList(object) => write!(f, "API returned object other than a list:\n{}", object),
-            CardParseErrorCause::CardCountNotFound(identifier) => write!(f, "Card {} could not be found in unresolved list", identifier),
+            CardParseErrorCause::ObjectNotCard(object) => write!(f, "API returned object other than a card:\n{object}"),
+            CardParseErrorCause::ObjectNotList(object) => write!(f, "API returned object other than a list:\n{object}"),
+            CardParseErrorCause::CardCountNotFound(identifier) => write!(f, "Card {identifier} could not be found in unresolved list"),
         }
     }
 }
@@ -61,11 +61,9 @@ fn get_count_for_card(card_map: &HashMap<CollectionCardIdentifier, usize>, card:
     if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::CollectorNumberSet((card.collector_number.clone(), card.set.clone())), false) {
         return Some(count)
     };
-    if let Some(mtgo_id) = &card.mtgo_id {
-        if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::MtgoId(*mtgo_id), false) {
-            return Some(count)
-        };
-    }
+    if let Some(mtgo_id) = &card.mtgo_id && let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::MtgoId(*mtgo_id), false) {
+        return Some(count)
+    };
     if let Some(multiverse_ids) = &card.multiverse_ids {
         for multiverse_id in multiverse_ids {
             if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::MultiverseId(*multiverse_id), false) {
@@ -73,16 +71,12 @@ fn get_count_for_card(card_map: &HashMap<CollectionCardIdentifier, usize>, card:
             };
         }
     }
-    if let Some(oracle_id) = &card.oracle_id {
-        if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::OracleId(*oracle_id), false) {
-            return Some(count)
-        };
-    }
-    if let Some(illustration_id) = &card.illustration_id {
-        if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::IllustrationId(*illustration_id), false) {
-            return Some(count)
-        };
-    }
+    if let Some(oracle_id) = &card.oracle_id && let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::OracleId(*oracle_id), false) {
+        return Some(count)
+    };
+    if let Some(illustration_id) = &card.illustration_id && let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::IllustrationId(*illustration_id), false) {
+        return Some(count)
+    };
     if let Some(count) = get_count_for_card_identifier(card_map, &CollectionCardIdentifier::NameSet((card.name.clone(), card.set.clone())), false) {
         return Some(count)
     };
@@ -97,7 +91,7 @@ fn get_count_for_card_identifier(card_map: &HashMap<CollectionCardIdentifier, us
         Some(count) => Some(*count),
         None => {
             if use_default {
-                warn!("Could not find card {} on the deck list, assuming it has one copy", card_identifier);
+                warn!("Could not find card {card_identifier} on the deck list, assuming it has one copy");
                 Some(1)
             } else {
                 None
@@ -106,9 +100,9 @@ fn get_count_for_card_identifier(card_map: &HashMap<CollectionCardIdentifier, us
     }
 }
 
-async fn fuzzy_resolve<Client: RequestClient>(card_map: &mut HashMap<CollectionCardIdentifier, usize>, api_interface: &ApiInterface<Client>, identifier: &CollectionCardIdentifier) -> Result<ResolvedCard, Box<dyn Error>> {
+async fn fuzzy_resolve<Client: RequestClient>(card_map: &HashMap<CollectionCardIdentifier, usize>, api_interface: &ApiInterface<Client>, identifier: &CollectionCardIdentifier) -> Result<ResolvedCard, Box<dyn Error>> {
     let Some(count) = get_count_for_card_identifier(card_map, identifier, true) else {
-        return Err(Box::new(CardParseError { cause: CardParseErrorCause::CardCountNotFound(format!("{}", identifier)) }));
+        return Err(Box::new(CardParseError { cause: CardParseErrorCause::CardCountNotFound(format!("{identifier}")) }));
     };
 
     let object = api_interface.get_card(identifier).await?;
@@ -119,7 +113,7 @@ async fn fuzzy_resolve<Client: RequestClient>(card_map: &mut HashMap<CollectionC
     }
 }
 
-pub async fn resolve_cards<Client: RequestClient>(card_map: &mut HashMap<CollectionCardIdentifier, usize>, fetch_related_tokens: bool, api_interface: &ApiInterface<Client>) -> Result<Vec<ResolvedCard>, Box<dyn Error>> {
+pub async fn resolve_cards<Client: RequestClient>(card_map: &HashMap<CollectionCardIdentifier, usize>, fetch_related_tokens: bool, api_interface: &ApiInterface<Client>) -> Result<Vec<ResolvedCard>, Box<dyn Error>> {
     if card_map.is_empty() {
         return Ok(Vec::new());
     }
@@ -132,11 +126,11 @@ pub async fn resolve_cards<Client: RequestClient>(card_map: &mut HashMap<Collect
     let num_of_chunks = unresolved_cards.len().div_ceil(75);
     let length_of_chunks = unresolved_cards.len().div_ceil(num_of_chunks);
 
-    let mut resolved_cards_futures: FuturesUnordered<Pin<Box<dyn Future<Output = Result<ApiObject, Box<dyn Error>>>>>> =
+    let mut resolved_cards_futures: FuturesUnordered<_> =
         unresolved_cards
             .chunks(length_of_chunks)
             .map(|unresolved_cards_chunk| 
-                Box::pin(api_interface.get_cards_from_list(unresolved_cards_chunk)) as Pin<Box<dyn Future<Output = Result<ApiObject, Box<dyn Error>>>>>
+                api_interface.get_cards_from_list(unresolved_cards_chunk)
             )
             .collect();
 
@@ -157,12 +151,10 @@ pub async fn resolve_cards<Client: RequestClient>(card_map: &mut HashMap<Collect
                         return Err(Box::new(CardParseError { cause: CardParseErrorCause::CardCountNotFound(card.name) }));
                     };
 
-                    if fetch_related_tokens {
-                        if let Some(related_cards) = &card.all_parts {
-                            for related_card in related_cards {
-                                if related_card.is_token() {
-                                    related_tokens.insert(CollectionCardIdentifier::Id(related_card.id), 1);
-                                }
+                    if fetch_related_tokens && let Some(related_cards) = &card.all_parts {
+                        for related_card in related_cards {
+                            if related_card.is_token() {
+                                related_tokens.insert(CollectionCardIdentifier::Id(related_card.id), 1);
                             }
                         }
                     }
@@ -180,12 +172,10 @@ pub async fn resolve_cards<Client: RequestClient>(card_map: &mut HashMap<Collect
         let resolved_card = fuzzy_resolve(card_map, api_interface, &CollectionCardIdentifier::Name(not_found_card.name.clone())).await?;
         warn!("{} did not match any card, using closest match: {}", not_found_card.name, resolved_card.card.name);
 
-        if fetch_related_tokens {
-            if let Some(related_cards) = &resolved_card.card.all_parts {
-                for related_card in related_cards {
-                    if related_card.is_token() {
-                        related_tokens.insert(CollectionCardIdentifier::Id(related_card.id), 1);
-                    }
+        if fetch_related_tokens && let Some(related_cards) = &resolved_card.card.all_parts {
+            for related_card in related_cards {
+                if related_card.is_token() {
+                    related_tokens.insert(CollectionCardIdentifier::Id(related_card.id), 1);
                 }
             }
         }
@@ -194,7 +184,7 @@ pub async fn resolve_cards<Client: RequestClient>(card_map: &mut HashMap<Collect
     }
 
     if fetch_related_tokens {
-        let tokens = Box::pin(resolve_cards(&mut related_tokens, false, api_interface)).await?;
+        let tokens = Box::pin(resolve_cards(&related_tokens, false, api_interface)).await?;
         let token_oracle_ids: HashMap<uuid::Uuid, ResolvedCard> = HashMap::from_iter(tokens.into_iter().filter_map(|card| {
             if let Some(oracle_id) = card.card.oracle_id {
                 Some((oracle_id, card))

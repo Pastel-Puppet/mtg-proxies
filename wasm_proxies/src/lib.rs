@@ -45,7 +45,7 @@ struct UserOptions {
 
 fn rust_error_to_js<T>(error: T) -> JsValue
     where T: Display {
-    error!("{}", error);
+    error!("{error}");
     JsValue::from_str(&error.to_string())
 }
 
@@ -141,15 +141,15 @@ pub struct CardClickedData {
     pub is_custom_card: bool,
 }
 
-async fn add_proxy_images_from_deck_list(mut user_options: UserOptions, document: &Document, card_click_callback: Function) -> Result<(), JsValue> {
-    let mut interface = ApiInterface::<WasmFetchWrapper>::new()
+async fn add_proxy_images_from_deck_list(user_options: UserOptions, document: &Document, card_click_callback: Function) -> Result<(), JsValue> {
+    let interface = ApiInterface::<WasmFetchWrapper>::new()
         .map_err(rust_error_to_js)?;
 
-    let deck_cards = resolve_cards(&mut user_options.deck_list, user_options.include_tokens, &mut interface).await
+    let deck_cards = resolve_cards(&user_options.deck_list, user_options.include_tokens, &interface).await
         .map_err(rust_error_to_js)?;
 
-    let mut cards_to_display = if let Some(mut old_deck) = user_options.old_deck {
-        let old_deck_cards = resolve_cards(&mut old_deck, user_options.include_tokens, &mut interface).await
+    let mut cards_to_display = if let Some(old_deck) = user_options.old_deck {
+        let old_deck_cards = resolve_cards(&old_deck, user_options.include_tokens, &interface).await
             .map_err(rust_error_to_js)?;
 
         deck_diff(old_deck_cards, deck_cards).added
@@ -200,7 +200,7 @@ async fn add_proxy_images_from_deck_list(mut user_options: UserOptions, document
             image_node.set_alt(&card.name);
             image_node.set_attribute("loading", "lazy")?;
 
-            let card_face_images_array = Array::from_iter(card_face_images.iter().cloned().map(|string| JsString::from(string)));
+            let card_face_images_array = Array::from_iter(card_face_images.iter().cloned().map(JsString::from));
             image_node.set_onclick(Some(&card_click_callback.bind1(&image_node, &JsValue::from(CardClickedData {
                 card_face_images_array,
                 prints_search_url: card.prints_search_uri.as_str().to_string(),
@@ -283,7 +283,7 @@ pub async fn generate_proxies_from_file_contents(file_contents: JsValue, file_mi
     let deck_list = match file_type.as_str() {
         "text/plain" | "" => parse_txt_data(&contents).map_err(rust_error_to_js)?,
         "application/json" => parse_json_data(&contents).map_err(rust_error_to_js)?,
-        _ => return Err(format!("Unsupported MIME type {}", file_type).into()),
+        _ => return Err(format!("Unsupported MIME type {file_type}").into()),
     };
 
     let old_deck_list = if old_file_contents.is_null() {
@@ -299,7 +299,7 @@ pub async fn generate_proxies_from_file_contents(file_contents: JsValue, file_mi
         Some(match old_file_type.as_str() {
             "text/plain" | "" => parse_txt_data(&old_contents).map_err(rust_error_to_js)?,
             "application/json" => parse_json_data(&old_contents).map_err(rust_error_to_js)?,
-            _ => return Err(format!("Unsupported MIME type {}", old_file_type).into()),
+            _ => return Err(format!("Unsupported MIME type {old_file_type}").into()),
         })
     };
 
@@ -330,9 +330,7 @@ fn printings_vec_to_array(card_printing_images: Vec<(Card, Vec<String>)>) -> Arr
         card_printing_images.into_iter().map(
             |(card, printing_images)| JsValue::from(Printing {
                 faces: Array::from_iter(
-                    printing_images.into_iter().map(
-                        |printing_image| JsString::from(printing_image)
-                    )
+                    printing_images.into_iter().map(JsString::from)
                 ),
                 set: card.set_name,
                 collector_number: card.collector_number,

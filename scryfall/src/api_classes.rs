@@ -35,7 +35,7 @@ impl Display for ApiObject {
             ApiObject::BulkData(bulk_data) => "BulkData(".to_owned() + &bulk_data.to_string() + ")",
         };
 
-        write!(f, "{}", text)
+        write!(f, "{text}")
     }
 }
 
@@ -69,7 +69,7 @@ pub struct List {
 impl Display for List {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let text = "[".to_owned() + &self.data.iter().map(|data: &ApiObject| data.to_string()).collect::<Vec<String>>().join(", ") + "]";
-        write!(f, "{}", text)
+        write!(f, "{text}")
     }
 }
 
@@ -94,15 +94,13 @@ impl Display for Error {
             } else {
                 "warnings: ".to_owned() + warnings + ", details: " + &self.details
             }
+        } else if let Some(error_type) = &self.error_type {
+            "type: ".to_owned() + error_type + ", details: " + &self.details
         } else {
-            if let Some(error_type) = &self.error_type {
-                "type: ".to_owned() + error_type + ", details: " + &self.details
-            } else {
-                "details: ".to_owned() + &self.details
-            }
+            "details: ".to_owned() + &self.details
         };
 
-        write!(f, "{}", text)
+        write!(f, "{text}")
     }
 }
 
@@ -249,7 +247,7 @@ pub struct Card {
 impl Display for Card {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let text = self.name.clone() + " (" + &self.set + ") " + &self.collector_number;
-        write!(f, "{}", text)
+        write!(f, "{text}")
     }
 }
 
@@ -338,7 +336,7 @@ pub struct CardFace {
 impl Display for CardFace {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let text = &self.name;
-        write!(f, "{}", text)
+        write!(f, "{text}")
     }
 }
 
@@ -355,7 +353,7 @@ pub struct RelatedCard {
 impl Display for RelatedCard {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let text = &self.name;
-        write!(f, "{}", text)
+        write!(f, "{text}")
     }
 }
 
@@ -388,7 +386,7 @@ pub struct Deck {
 impl Display for Deck {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let text = &self.name;
-        write!(f, "{}", text)
+        write!(f, "{text}")
     }
 }
 
@@ -410,7 +408,7 @@ pub struct DeckEntry {
 impl Display for DeckEntry {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let text = &self.raw_text;
-        write!(f, "{}", text)
+        write!(f, "{text}")
     }
 }
 
@@ -425,7 +423,7 @@ impl Display for Finish {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Finish::NoFinish(_) => write!(f, "no finish"),
-            Finish::Finish(finish) => write!(f, "{}", finish),
+            Finish::Finish(finish) => write!(f, "{finish}"),
         }
     }
 }
@@ -447,7 +445,7 @@ pub struct CardDigest {
 impl Display for CardDigest {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let text = self.name.clone() + " (" + &self.set + ") " + &self.collector_number;
-        write!(f, "{}", text)
+        write!(f, "{text}")
     }
 }
 
@@ -477,6 +475,6 @@ pub struct BulkData {
 impl Display for BulkData {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let text = &self.name;
-        write!(f, "{}", text)
+        write!(f, "{text}")
     }
 }

@@ -75,7 +75,7 @@ impl<Client> ApiInterface<Client>
     }
 
     pub async fn get_card(&self, card: &CollectionCardIdentifier) -> Result<ApiObject, Box<dyn ErrorTrait>> {
-        info!("Sending API request for card {}", card);
+        info!("Sending API request for card {card}");
 
         let response = match card {
             CollectionCardIdentifier::Id(uuid) => {
@@ -157,7 +157,7 @@ impl<Client> ApiInterface<Client>
     }
 
     pub async fn get_all_printings(&self, prints_search_uri: String, card_name: String) -> Result<Vec<Card>, Box<dyn ErrorTrait>> {
-        info!("Sending API request for all printings of {}", card_name);
+        info!("Sending API request for all printings of {card_name}");
 
         let search_results = self.resolve_multi_page_search(prints_search_uri).await?;
 

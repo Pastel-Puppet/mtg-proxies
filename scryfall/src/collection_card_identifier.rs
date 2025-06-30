@@ -28,7 +28,7 @@ impl Display for CollectionCardIdentifier {
             CollectionCardIdentifier::CollectorNumberSet((collector_number, set)) => "CollectorNumberSet(".to_owned() + collector_number + ", " + set + ")",
         };
 
-        write!(f, "{}", text)
+        write!(f, "{text}")
     }
 }
 

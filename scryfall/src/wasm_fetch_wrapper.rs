@@ -60,7 +60,7 @@ pub struct WasmFetchWrapper {
 
 impl WasmFetchWrapper {
     async fn _get(&self, url: String, opts: RequestInit) -> Result<JsValue, JsValue> {
-        let request = Request::new_with_str_and_init(&url.as_str(), &opts)?;
+        let request = Request::new_with_str_and_init(url.as_str(), &opts)?;
         request.headers().set("Accept", "application/json")?;
 
         let response: Response = JsFuture::from(self.window.fetch_with_request(&request)).await?.dyn_into()?;
@@ -70,7 +70,7 @@ impl WasmFetchWrapper {
     }
 
     async fn _post(&self, url: String, opts: RequestInit) -> Result<JsValue, JsValue> {
-        let request = Request::new_with_str_and_init(&url.as_str(), &opts)?;
+        let request = Request::new_with_str_and_init(url.as_str(), &opts)?;
         request.headers().set("Accept", "application/json")?;
         request.headers().set("Content-Type", "application/json")?;
 

@@ -3,7 +3,14 @@ build-std = ["panic_abort", "alloc", "core"]
 build-std-features = ["panic_immediate_abort", "optimize_for_size"]
 
 [build]
+target = "wasm32-unknown-unknown"
 rustflags = [
     "-Zlocation-detail=none",
     "-Zfmt-debug=none",
 ]
+
+[profile.release]
+opt-level = 'z'
+lto = true
+codegen-units = 1
+panic = "abort"

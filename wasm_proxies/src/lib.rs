@@ -366,7 +366,7 @@ pub async fn get_printings_for_card(search_url: String, current_printing_image: 
         return Err("Could not find root document object".into());
     };
     
-    let mut interface = ApiInterface::<WasmFetchWrapper>::new()
+    let interface = ApiInterface::<WasmFetchWrapper>::new()
         .map_err(rust_error_to_js)?;
 
     let card_printings = interface.get_all_printings(search_url, card_name).await

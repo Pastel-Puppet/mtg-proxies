@@ -1,7 +1,7 @@
-use core::{error::Error, fmt::Display};
+use core::{error::Error, fmt::Display, pin::Pin};
 use alloc::{boxed::Box, format, string::String, vec::Vec};
+use futures::{stream::FuturesUnordered, StreamExt};
 use hashbrown::HashMap;
-
 use log::warn;
 
 use crate::{api_classes::{ApiObject, Card, CardNotFound}, api_interface::{ApiInterface, RequestClient}, collection_card_identifier::CollectionCardIdentifier, token_handling::Token};
@@ -106,7 +106,7 @@ fn get_count_for_card_identifier(card_map: &HashMap<CollectionCardIdentifier, us
     }
 }
 
-async fn fuzzy_resolve<Client: RequestClient>(card_map: &mut HashMap<CollectionCardIdentifier, usize>, api_interface: &mut ApiInterface<Client>, identifier: &CollectionCardIdentifier) -> Result<ResolvedCard, Box<dyn Error>> {
+async fn fuzzy_resolve<Client: RequestClient>(card_map: &mut HashMap<CollectionCardIdentifier, usize>, api_interface: &ApiInterface<Client>, identifier: &CollectionCardIdentifier) -> Result<ResolvedCard, Box<dyn Error>> {
     let Some(count) = get_count_for_card_identifier(card_map, identifier, true) else {
         return Err(Box::new(CardParseError { cause: CardParseErrorCause::CardCountNotFound(format!("{}", identifier)) }));
     };
@@ -119,7 +119,7 @@ async fn fuzzy_resolve<Client: RequestClient>(card_map: &mut HashMap<CollectionC
     }
 }
 
-pub async fn resolve_cards<Client: RequestClient>(card_map: &mut HashMap<CollectionCardIdentifier, usize>, fetch_related_tokens: bool, api_interface: &mut ApiInterface<Client>) -> Result<Vec<ResolvedCard>, Box<dyn Error>> {
+pub async fn resolve_cards<Client: RequestClient>(card_map: &mut HashMap<CollectionCardIdentifier, usize>, fetch_related_tokens: bool, api_interface: &ApiInterface<Client>) -> Result<Vec<ResolvedCard>, Box<dyn Error>> {
     if card_map.is_empty() {
         return Ok(Vec::new());
     }
@@ -132,8 +132,16 @@ pub async fn resolve_cards<Client: RequestClient>(card_map: &mut HashMap<Collect
     let num_of_chunks = unresolved_cards.len().div_ceil(75);
     let length_of_chunks = unresolved_cards.len().div_ceil(num_of_chunks);
 
-    for unresolved_cards_chunk in unresolved_cards.chunks(length_of_chunks) {
-        let list = match api_interface.get_cards_from_list(unresolved_cards_chunk).await? {
+    let mut resolved_cards_futures: FuturesUnordered<Pin<Box<dyn Future<Output = Result<ApiObject, Box<dyn Error>>>>>> =
+        unresolved_cards
+            .chunks(length_of_chunks)
+            .map(|unresolved_cards_chunk| 
+                Box::pin(api_interface.get_cards_from_list(unresolved_cards_chunk)) as Pin<Box<dyn Future<Output = Result<ApiObject, Box<dyn Error>>>>>
+            )
+            .collect();
+
+    while let Some(resolved_cards_chunk) = resolved_cards_futures.next().await {
+        let list = match resolved_cards_chunk? {
             ApiObject::List(list) => list,
             other => return Err(Box::new(CardParseError { cause: CardParseErrorCause::ObjectNotList(other) })),
         };
@@ -165,6 +173,8 @@ pub async fn resolve_cards<Client: RequestClient>(card_map: &mut HashMap<Collect
             }
         }
     }
+
+    drop(resolved_cards_futures);
 
     for not_found_card in not_found_cards_list {
         let resolved_card = fuzzy_resolve(card_map, api_interface, &CollectionCardIdentifier::Name(not_found_card.name.clone())).await?;

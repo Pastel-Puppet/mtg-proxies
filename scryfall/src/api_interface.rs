@@ -52,12 +52,12 @@ impl Display for InvalidApiObjectError {
 
 impl ErrorTrait for InvalidApiObjectError {}
 
-static NAMED_CARD_METHOD: &str = "/cards/named";
-static SPECIFIED_CARD_METHOD: &str = "/cards";
-static MULTIVERSE_CARD_METHOD: &str = "/cards/multiverse";
-static MTGO_CARD_METHOD: &str = "/cards/mtgo";
-static CARD_COLLECTION_METHOD: &str = "/cards/collection";
-static BULK_DATA_METHOD: &str = "/bulk-data/all-cards";
+static NAMED_CARD_METHOD: &str = "cards/named";
+static SPECIFIED_CARD_METHOD: &str = "cards";
+static MULTIVERSE_CARD_METHOD: &str = "cards/multiverse";
+static MTGO_CARD_METHOD: &str = "cards/mtgo";
+static CARD_COLLECTION_METHOD: &str = "cards/collection";
+static BULK_DATA_METHOD: &str = "bulk-data/all-cards";
 
 pub struct ApiInterface<Client>
     where Client: RequestClient {
@@ -70,11 +70,11 @@ impl<Client> ApiInterface<Client>
     pub fn new() -> Result<Self, Box<dyn ErrorTrait>> {
         Ok(Self {
             http_client: Client::build()?,
-            api_endpoint: "https://api.scryfall.com/".to_owned(),
+            api_endpoint: "https://api.scryfall.com".to_owned(),
         })
     }
 
-    pub async fn get_card(&mut self, card: &CollectionCardIdentifier) -> Result<ApiObject, Box<dyn ErrorTrait>> {
+    pub async fn get_card(&self, card: &CollectionCardIdentifier) -> Result<ApiObject, Box<dyn ErrorTrait>> {
         info!("Sending API request for card {}", card);
 
         let response = match card {
@@ -108,7 +108,7 @@ impl<Client> ApiInterface<Client>
         }
     }
 
-    pub async fn get_cards_from_list(&mut self, identifiers: &[&CollectionCardIdentifier]) -> Result<ApiObject, Box<dyn ErrorTrait>> {
+    pub async fn get_cards_from_list(&self, identifiers: &[&CollectionCardIdentifier]) -> Result<ApiObject, Box<dyn ErrorTrait>> {
         let identifiers_json = json!({
             "identifiers": identifiers
         });
@@ -125,7 +125,7 @@ impl<Client> ApiInterface<Client>
         }
     }
 
-    async fn resolve_multi_page_search(&mut self, search_url: String) -> Result<Vec<ApiObject>, Box<dyn ErrorTrait>> {
+    async fn resolve_multi_page_search(&self, search_url: String) -> Result<Vec<ApiObject>, Box<dyn ErrorTrait>> {
         info!("Sending API request for next page of results");
 
         let response = self.http_client.get(search_url).await?;
@@ -156,7 +156,7 @@ impl<Client> ApiInterface<Client>
         Ok(current_page.data)
     }
 
-    pub async fn get_all_printings(&mut self, prints_search_uri: String, card_name: String) -> Result<Vec<Card>, Box<dyn ErrorTrait>> {
+    pub async fn get_all_printings(&self, prints_search_uri: String, card_name: String) -> Result<Vec<Card>, Box<dyn ErrorTrait>> {
         info!("Sending API request for all printings of {}", card_name);
 
         let search_results = self.resolve_multi_page_search(prints_search_uri).await?;
@@ -173,7 +173,7 @@ impl<Client> ApiInterface<Client>
         Ok(card_printings)
     }
 
-    async fn get_bulk_data_endpoint(&mut self) -> Result<ApiObject, Box<dyn ErrorTrait>> {
+    async fn get_bulk_data_endpoint(&self) -> Result<ApiObject, Box<dyn ErrorTrait>> {
         info!("Sending API request for bulk data endpoints");
 
         let response = self.http_client.get(format!("{}/{}", self.api_endpoint, BULK_DATA_METHOD)).await?;
@@ -186,7 +186,7 @@ impl<Client> ApiInterface<Client>
         }
     }
 
-    pub async fn get_bulk_data(&mut self) -> Result<String, Box<dyn ErrorTrait>> {
+    pub async fn get_bulk_data(&self) -> Result<String, Box<dyn ErrorTrait>> {
         let received_object = self.get_bulk_data_endpoint().await?;
         let ApiObject::BulkData(bulk_data_endpoint) = received_object else {
             return Err(Box::new(InvalidApiObjectError { expected: "BulkData",  received: received_object }));

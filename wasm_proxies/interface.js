@@ -202,6 +202,7 @@ async function cardClicked(image_urls, prints_search_uri, card_name, is_custom_c
         
         let card_link_node = document.createElement("a");
         card_link_node.href = printing.scryfall_url;
+        card_link_node.target = "_blank";
         card_link_node.innerText = "View more information about " + card_name + " on Scryfall";
         card_printing_index_node.appendChild(card_link_node)
 

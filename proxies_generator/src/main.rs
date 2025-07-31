@@ -39,7 +39,7 @@ struct Args {
     exclude_basic_lands: bool,
     #[arg(long, short, value_enum)]
     image_type: Option<ImageType>,
-    #[arg(short, long)]
+    #[arg(long)]
     include_tokens: bool,
     #[arg(short, long)]
     verbose: bool,
@@ -69,7 +69,7 @@ async fn get_cards_from_file(deck_file: &mut Input, interface: &mut ApiInterface
     let deck_file = deck_file.get_file().expect("Could not open deck file");
 
     let mut unresolved_cards = match deck_file_extension.as_str() {
-        "txt" => {
+        "txt" | "dec" => {
             parse_txt_file(deck_file).expect("Could not parse deck file")
         },
         "json" => {

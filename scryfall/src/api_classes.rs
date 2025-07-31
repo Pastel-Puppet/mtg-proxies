@@ -4,7 +4,7 @@ use hashbrown::HashMap;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::token_handling::Token;
+use crate::{collection_card_identifier::CollectionCardIdentifier, token_handling::Token};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "object")]
@@ -40,22 +40,11 @@ impl Display for ApiObject {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct CardNotFound {
-    pub name: String,
-}
-
-impl Display for CardNotFound {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.name)
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename = "list")]
 pub struct List {
     pub data: Vec<ApiObject>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub not_found: Option<Vec<CardNotFound>>,
+    pub not_found: Option<Vec<CollectionCardIdentifier>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub has_more: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]

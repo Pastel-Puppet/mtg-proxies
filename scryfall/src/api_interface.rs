@@ -78,24 +78,24 @@ impl<Client> ApiInterface<Client>
         info!("Sending API request for card {card}");
 
         let response = match card {
-            CollectionCardIdentifier::Id(uuid) => {
-                self.http_client.get(format!("{}/{}/{}", self.api_endpoint, SPECIFIED_CARD_METHOD, uuid)).await?
+            CollectionCardIdentifier::Id { id } => {
+                self.http_client.get(format!("{}/{}/{}", self.api_endpoint, SPECIFIED_CARD_METHOD, id)).await?
             },
-            CollectionCardIdentifier::MtgoId(id) => {
-                self.http_client.get(format!("{}/{}/{}", self.api_endpoint, MTGO_CARD_METHOD, id)).await?
+            CollectionCardIdentifier::MtgoId { mtgo_id } => {
+                self.http_client.get(format!("{}/{}/{}", self.api_endpoint, MTGO_CARD_METHOD, mtgo_id)).await?
             },
-            CollectionCardIdentifier::MultiverseId(id) => {
-                self.http_client.get(format!("{}/{}/{}", self.api_endpoint, MULTIVERSE_CARD_METHOD, id)).await?
+            CollectionCardIdentifier::MultiverseId { multiverse_id } => {
+                self.http_client.get(format!("{}/{}/{}", self.api_endpoint, MULTIVERSE_CARD_METHOD, multiverse_id)).await?
             },
-            CollectionCardIdentifier::OracleId(_) |
-            CollectionCardIdentifier::IllustrationId(_) => return Err(Box::new(InvalidCardIdentifierError)),
-            CollectionCardIdentifier::Name(name) => {
+            CollectionCardIdentifier::OracleId{ oracle_id: _ } |
+            CollectionCardIdentifier::IllustrationId { illustration_id: _ } => return Err(Box::new(InvalidCardIdentifierError)),
+            CollectionCardIdentifier::Name { name } => {
                 self.http_client.get_with_parameters(format!("{}/{}", self.api_endpoint, NAMED_CARD_METHOD), &[("fuzzy", name)]).await?
             },
-            CollectionCardIdentifier::NameSet((name, set)) => {
+            CollectionCardIdentifier::NameSet { name, set } => {
                 self.http_client.get_with_parameters(format!("{}/{}", self.api_endpoint, NAMED_CARD_METHOD), &[("fuzzy", name), ("set", set)]).await?
             },
-            CollectionCardIdentifier::CollectorNumberSet((collector_number, set)) => {
+            CollectionCardIdentifier::CollectorNumberSet { collector_number, set } => {
                 self.http_client.get(format!("{}/{}/{}/{}", self.api_endpoint, SPECIFIED_CARD_METHOD, set, collector_number)).await?
             },
         };

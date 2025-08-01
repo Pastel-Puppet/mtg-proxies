@@ -3,18 +3,23 @@ extern crate alloc;
 
 mod logging;
 
-use core::fmt::Display;
+use core::{fmt::Display, arch::wasm32::unreachable};
 use alloc::{borrow::ToOwned, format, string::{String, ToString}, vec::Vec};
 use hashbrown::HashMap;
 use log::error;
 use wasm_bindgen::prelude::*;
 use web_sys::{js_sys::{Array, Function, JsString}, window, Document, HtmlDivElement, HtmlImageElement, HtmlInputElement, HtmlTextAreaElement};
 
-use scryfall::{api_classes::Card, api_interface::ApiInterface, card_images_helper::{extract_images, ImageUriType}, collection_card_identifier::CollectionCardIdentifier, deck_formats::{deck_diff, parse_json_data, parse_txt_data}, fetch_card_list::resolve_cards, wasm_fetch_wrapper::WasmFetchWrapper};
+use scryfall::{api_classes::Card, api_interface::ApiInterface, card_images_helper::{extract_images, ImageUriType}, collection_card_identifier::CollectionCardIdentifier, deck_formats::{deck_diff, parse_json_data, parse_txt_data_js}, fetch_card_list::resolve_cards, wasm_fetch_wrapper::WasmFetchWrapper};
 use crate::logging::WasmLogger;
 
 #[global_allocator]
 static ALLOCATOR: talc::TalckWasm = unsafe { talc::TalckWasm::new_global() };
+
+#[panic_handler]
+fn panic(_panic: &core::panic::PanicInfo<'_>) -> ! {
+    unreachable()
+}
 
 const DECK_LIST_TEXTBOX_ID: &str = "deck-list";
 const OLD_DECK_LIST_TEXTBOX_ID: &str = "old-deck-list";
@@ -232,8 +237,7 @@ pub async fn generate_proxies_from_textbox(custom_card_blob_urls: Array, old_dec
     };
 
     let deck_list_text = deck_list_textbox.dyn_into::<HtmlTextAreaElement>()?.value();
-    let deck_list = parse_txt_data(&deck_list_text)
-        .map_err(rust_error_to_js)?;
+    let deck_list = parse_txt_data_js(&deck_list_text)?;
 
     let old_deck_list = if old_deck_list_enabled.is_truthy() {
         let Some(old_deck_list_textbox) = document.get_element_by_id(OLD_DECK_LIST_TEXTBOX_ID) else {
@@ -241,8 +245,7 @@ pub async fn generate_proxies_from_textbox(custom_card_blob_urls: Array, old_dec
         };
 
         let old_deck_list_text = old_deck_list_textbox.dyn_into::<HtmlTextAreaElement>()?.value();
-        Some(parse_txt_data(&old_deck_list_text)
-            .map_err(rust_error_to_js)?)
+        Some(parse_txt_data_js(&old_deck_list_text)?)
     } else {
         None
     };
@@ -276,7 +279,7 @@ pub async fn generate_proxies_from_file_contents(file_contents: JsValue, file_mi
     };
 
     let deck_list = match file_type.as_str() {
-        "text/plain" | "" => parse_txt_data(&contents).map_err(rust_error_to_js)?,
+        "text/plain" | "" => parse_txt_data_js(&contents)?,
         "application/json" => parse_json_data(&contents).map_err(rust_error_to_js)?,
         _ => return Err(format!("Unsupported MIME type {file_type}").into()),
     };
@@ -292,7 +295,7 @@ pub async fn generate_proxies_from_file_contents(file_contents: JsValue, file_mi
         };
 
         Some(match old_file_type.as_str() {
-            "text/plain" | "" => parse_txt_data(&old_contents).map_err(rust_error_to_js)?,
+            "text/plain" | "" => parse_txt_data_js(&old_contents)?,
             "application/json" => parse_json_data(&old_contents).map_err(rust_error_to_js)?,
             _ => return Err(format!("Unsupported MIME type {old_file_type}").into()),
         })

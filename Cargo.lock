@@ -1312,6 +1312,7 @@ dependencies = [
  "futures",
  "governor",
  "hashbrown 0.15.4",
+ "js-sys",
  "log",
  "nonzero_ext",
  "regex",

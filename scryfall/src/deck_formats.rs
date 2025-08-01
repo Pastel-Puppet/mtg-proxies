@@ -4,8 +4,13 @@ use core::error::Error;
 use alloc::{boxed::Box, string::ToString, vec::Vec};
 use hashbrown::{HashMap, HashSet};
 use log::error;
-use regex::Regex;
 use serde_json::from_str;
+#[cfg(feature = "std")]
+use regex::Regex;
+#[cfg(feature = "wasm")]
+use js_sys::{RegExp, Array, JsString};
+#[cfg(feature = "wasm")]
+use wasm_bindgen::{JsValue, JsCast};
 
 use crate::{api_classes::{Card, Deck}, collection_card_identifier::CollectionCardIdentifier, fetch_card_list::ResolvedCard};
 
@@ -47,6 +52,7 @@ pub fn parse_txt_file(file: &File) -> Result<HashMap<CollectionCardIdentifier, u
     parse_txt_data(&deck_file)
 }
 
+#[cfg(feature = "std")]
 pub fn parse_txt_data(txt_data: &str) -> Result<HashMap<CollectionCardIdentifier, usize>, Box<dyn Error>> {
     let mut cards = HashMap::new();
     let regex = Regex::new(r"(?Rm)^(?<count>\d+) (?:\[(?<set>\S+?)(?:#(?<collector_number>\d+))?\] )?(?<name>.+?)(?:\((?<arena_set>.+)\) (?<arena_collector_number>.+))?(?: <.*>)?(?: #.*)?$")?;
@@ -66,6 +72,45 @@ pub fn parse_txt_data(txt_data: &str) -> Result<HashMap<CollectionCardIdentifier
 
         let set = card_details.name("set").or_else(|| card_details.name("arena_set")).or_else(|| None).map(|matched_str| matched_str.as_str().to_string());
         let collector_number = card_details.name("collector_number").or_else(|| card_details.name("arena_collector_number")).or_else(|| None).map(|matched_str| matched_str.as_str().to_string());
+
+        if let Some(set) = set {
+            if let Some(collector_number) = collector_number {
+                cards.insert(CollectionCardIdentifier::CollectorNumberSet { collector_number, set }, count);
+            } else {
+                cards.insert(CollectionCardIdentifier::NameSet { name, set }, count);
+            }
+        } else {
+            cards.insert(CollectionCardIdentifier::Name { name }, count);
+        }
+    }
+
+    Ok(cards)
+}
+
+#[cfg(feature = "wasm")]
+pub fn parse_txt_data_js(txt_data: &str) -> Result<HashMap<CollectionCardIdentifier, usize>, JsValue> {
+    let mut cards = HashMap::new();
+    let regex = RegExp::new(r"^(?<count>\d+) (?:\[(?<set>\S+?)(?:#(?<collector_number>\d+))?\] )?(?<name>.+?)(?:\((?<arena_set>.+)\) (?<arena_collector_number>.+))?(?: <.*>)?(?: #.*)?$", "gum");
+
+    for matched_line in JsString::from(txt_data).match_all(&regex) {
+        let Ok(Ok(matches_array)) = matched_line.map(|array| array.dyn_into::<Array>()) else {
+            continue;
+        };
+
+        let count: usize = if let Some(digits) = matches_array.get(1).as_string() {
+            digits.parse().map_err(|error: core::num::ParseIntError| error.to_string())?
+        } else {
+            error!("RegEx matched but no capturing group called 'count' present");
+            continue;
+        };
+
+        let Some(name) = matches_array.get(4).as_string() else {
+            error!("RegEx matched but no capturing group called 'name' present");
+            continue;
+        };
+
+        let set = matches_array.get(2).as_string().or_else(|| matches_array.get(5).as_string()).or_else(|| None);
+        let collector_number = matches_array.get(3).as_string().or_else(|| matches_array.get(6).as_string()).or_else(|| None);
 
         if let Some(set) = set {
             if let Some(collector_number) = collector_number {

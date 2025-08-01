@@ -1,9 +1,17 @@
+pub mod collection_card_identifier;
+pub mod api_classes;
+#[cfg(feature = "std")]
+pub mod reqwest_wrapper;
+#[cfg(feature = "wasm")]
+pub mod wasm_fetch_wrapper;
+
 use core::{error::Error as ErrorTrait, fmt::Display};
 use alloc::{borrow::ToOwned, boxed::Box, format, string::String, vec::Vec};
 use log::{info, warn};
 use serde_json::{from_str, json, Value};
 
-use crate::{api_classes::{ApiObject, Card, Error}, collection_card_identifier::CollectionCardIdentifier};
+use api_classes::{ApiObject, Card, Error};
+use collection_card_identifier::CollectionCardIdentifier;
 
 pub trait RequestClient {
     fn build() -> Result<Self, Box<dyn ErrorTrait>>

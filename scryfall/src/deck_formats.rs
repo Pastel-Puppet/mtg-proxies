@@ -1,7 +1,7 @@
 #[cfg(feature = "std")]
 use std::{fs::File, io::{BufReader, Read}};
 use core::error::Error;
-use alloc::{boxed::Box, string::ToString, vec::Vec};
+use alloc::{boxed::Box, vec::Vec, string::ToString};
 use hashbrown::{HashMap, HashSet};
 use log::error;
 use serde_json::from_str;
@@ -12,7 +12,7 @@ use js_sys::{RegExp, Array, JsString};
 #[cfg(feature = "wasm")]
 use wasm_bindgen::{JsValue, JsCast};
 
-use crate::{api_classes::{Card, Deck}, collection_card_identifier::CollectionCardIdentifier, fetch_card_list::ResolvedCard};
+use crate::{api_interface::{api_classes::{Card, Deck}, collection_card_identifier::CollectionCardIdentifier}, fetch_card_list::ResolvedCard};
 
 pub struct DeckDiff {
     pub unchanged: Vec<Card>,
@@ -70,8 +70,8 @@ pub fn parse_txt_data(txt_data: &str) -> Result<HashMap<CollectionCardIdentifier
             continue;
         };
 
-        let set = card_details.name("set").or_else(|| card_details.name("arena_set")).or_else(|| None).map(|matched_str| matched_str.as_str().to_string());
-        let collector_number = card_details.name("collector_number").or_else(|| card_details.name("arena_collector_number")).or_else(|| None).map(|matched_str| matched_str.as_str().to_string());
+        let set = card_details.name("set").or_else(|| card_details.name("arena_set")).or(None).map(|matched_str| matched_str.as_str().to_string());
+        let collector_number = card_details.name("collector_number").or_else(|| card_details.name("arena_collector_number")).or(None).map(|matched_str| matched_str.as_str().to_string());
 
         if let Some(set) = set {
             if let Some(collector_number) = collector_number {
@@ -109,8 +109,8 @@ pub fn parse_txt_data_js(txt_data: &str) -> Result<HashMap<CollectionCardIdentif
             continue;
         };
 
-        let set = matches_array.get(2).as_string().or_else(|| matches_array.get(5).as_string()).or_else(|| None);
-        let collector_number = matches_array.get(3).as_string().or_else(|| matches_array.get(6).as_string()).or_else(|| None);
+        let set = matches_array.get(2).as_string().or_else(|| matches_array.get(5).as_string()).or(None);
+        let collector_number = matches_array.get(3).as_string().or_else(|| matches_array.get(6).as_string()).or(None);
 
         if let Some(set) = set {
             if let Some(collector_number) = collector_number {

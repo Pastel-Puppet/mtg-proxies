@@ -1,7 +1,7 @@
 use alloc::{string::{String, ToString}, vec::Vec};
 use log::error;
 
-use crate::api_classes::{Card, ImageUris};
+use crate::api_interface::api_classes::{Card, ImageUris};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImageUriType {

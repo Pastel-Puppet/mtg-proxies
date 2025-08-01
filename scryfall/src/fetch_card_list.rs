@@ -4,7 +4,7 @@ use futures::{stream::FuturesUnordered, StreamExt};
 use hashbrown::HashMap;
 use log::warn;
 
-use crate::{api_classes::{ApiObject, Card}, api_interface::{ApiInterface, RequestClient}, collection_card_identifier::CollectionCardIdentifier, token_handling::Token};
+use crate::{api_interface::{api_classes::{ApiObject, Card}, ApiInterface, RequestClient, collection_card_identifier::CollectionCardIdentifier}, token_handling::Token};
 
 #[derive(Debug, Clone)]
 enum CardParseErrorCause {

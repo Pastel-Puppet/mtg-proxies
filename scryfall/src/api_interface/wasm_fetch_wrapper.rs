@@ -5,7 +5,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{console::error_1, js_sys::JsString, window, Request, RequestInit, RequestMode, Response, Url, UrlSearchParams, Window};
 
-use crate::api_interface::RequestClient;
+use super::RequestClient;
 
 #[derive(Debug, Clone)]
 pub struct JsErrorWrapper {

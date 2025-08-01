@@ -4,7 +4,7 @@ use governor::{DefaultDirectRateLimiter, Quota, RateLimiter};
 use nonzero_ext::nonzero;
 use serde_json::Value;
 
-use crate::api_interface::RequestClient;
+use super::RequestClient;
 
 static APP_USER_AGENT: &str = concat!(
     env!("CARGO_PKG_NAME"),

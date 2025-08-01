@@ -1,4 +1,4 @@
-use crate::api_classes::{Card, RelatedCard};
+use crate::api_interface::api_classes::{Card, RelatedCard};
 
 pub trait Token {
     fn is_token(&self) -> bool;

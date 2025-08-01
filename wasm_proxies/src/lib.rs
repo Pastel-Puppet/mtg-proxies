@@ -10,7 +10,7 @@ use log::error;
 use wasm_bindgen::prelude::*;
 use web_sys::{js_sys::{Array, Function, JsString}, window, Document, HtmlDivElement, HtmlImageElement, HtmlInputElement, HtmlTextAreaElement};
 
-use scryfall::{api_classes::Card, api_interface::ApiInterface, card_images_helper::{extract_images, ImageUriType}, collection_card_identifier::CollectionCardIdentifier, deck_formats::{deck_diff, parse_json_data, parse_txt_data_js}, fetch_card_list::resolve_cards, wasm_fetch_wrapper::WasmFetchWrapper};
+use scryfall::{api_interface::{api_classes::Card, ApiInterface, collection_card_identifier::CollectionCardIdentifier, wasm_fetch_wrapper::WasmFetchWrapper}, card_images_helper::{extract_images, ImageUriType}, deck_formats::{deck_diff, parse_json_data, parse_txt_data_js}, fetch_card_list::resolve_cards};
 use crate::logging::WasmLogger;
 
 #[global_allocator]

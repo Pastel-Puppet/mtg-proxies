@@ -3,7 +3,7 @@ use clap::{Parser, ValueEnum};
 use clio::{Input, OutputPath};
 use log::LevelFilter;
 
-use scryfall::{api_interface::ApiInterface, card_images_helper::{extract_images, ImageUriType}, deck_formats::{deck_diff, parse_json_file, parse_txt_file}, fetch_card_list::{resolve_cards, ResolvedCard}, reqwest_wrapper::ReqwestWrapper};
+use scryfall::{api_interface::{ApiInterface, reqwest_wrapper::ReqwestWrapper}, card_images_helper::{extract_images, ImageUriType}, deck_formats::{deck_diff, parse_json_file, parse_txt_file}, fetch_card_list::{resolve_cards, ResolvedCard}};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum ImageType {
@@ -48,11 +48,11 @@ struct Args {
     old_deck: Option<Input>,
 }
 
-fn generate_proxies_html(card_images: &Vec<String>, extra_cards: &Vec<String>) -> Result<String, Box<dyn Error>> {
+fn generate_proxies_html(card_images: &Vec<String>, extra_cards: &[String]) -> Result<String, Box<dyn Error>> {
     let mut html = "<!DOCTYPE html><html><style>@page {size: auto;margin: 5mm 10mm;}.card{margin: 0;page-break-inside: avoid;width: 63mm;height: 88mm;}</style><body style=\"margin: 0 0 30px;padding: 0;font-size: 0;\">".to_owned();
 
     for image_url in extra_cards.iter().chain(card_images) {
-        html += &format!("<img src=\"{}\" class=\"card\"/>", image_url);
+        html += &format!("<img src=\"{image_url}\" class=\"card\"/>");
     }
 
     html += "</body></html>";
@@ -68,17 +68,17 @@ async fn get_cards_from_file(deck_file: &mut Input, interface: &mut ApiInterface
 
     let deck_file = deck_file.get_file().expect("Could not open deck file");
 
-    let mut unresolved_cards = match deck_file_extension.as_str() {
+    let unresolved_cards = match deck_file_extension.as_str() {
         "txt" | "dec" => {
             parse_txt_file(deck_file).expect("Could not parse deck file")
         },
         "json" => {
             parse_json_file(deck_file).expect("Could not parse deck file")
         },
-        _ => panic!("File extension {} is not supported", deck_file_extension),
+        _ => panic!("File extension {deck_file_extension} is not supported"),
     };
 
-    resolve_cards(&mut unresolved_cards, include_tokens, interface).await.expect("Could not resolve deck cards")
+    resolve_cards(&unresolved_cards, include_tokens, interface).await.expect("Could not resolve deck cards")
 }
 
 #[tokio::main]
@@ -108,7 +108,7 @@ async fn main() {
         extract_images(difference.added, args.exclude_basic_lands, args.image_type.unwrap_or(ImageType::Large).into())
     } else {
         for card in &cards {
-            println!("{}", card);
+            println!("{card}");
         }
 
         extract_images(cards.into_iter().map(|card| card.card).collect(), args.exclude_basic_lands, args.image_type.unwrap_or(ImageType::Large).into())

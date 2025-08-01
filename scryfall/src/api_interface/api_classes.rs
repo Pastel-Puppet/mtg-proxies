@@ -4,7 +4,8 @@ use hashbrown::HashMap;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{collection_card_identifier::CollectionCardIdentifier, token_handling::Token};
+use super::collection_card_identifier::CollectionCardIdentifier;
+use crate::token_handling::Token;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "object")]

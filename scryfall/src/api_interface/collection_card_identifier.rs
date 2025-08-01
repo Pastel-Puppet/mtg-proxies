@@ -45,9 +45,9 @@ impl PartialEq for CollectionCardIdentifier {
             (Self::MultiverseId { multiverse_id: l0 }, Self::MultiverseId { multiverse_id: r0 }) => l0 == r0,
             (Self::OracleId { oracle_id: l0 }, Self::OracleId { oracle_id: r0 }) => l0 == r0,
             (Self::IllustrationId { illustration_id: l0 }, Self::IllustrationId { illustration_id: r0 }) => l0 == r0,
-            (Self::Name { name: l0 }, Self::Name {name: r0 }) => l0.to_ascii_lowercase() == r0.to_ascii_lowercase(),
-            (Self::NameSet { name: l0, set: l1 }, Self::NameSet { name: r0, set: r1 }) => l0.to_ascii_lowercase() == r0.to_ascii_lowercase() && l1.to_ascii_lowercase() == r1.to_ascii_lowercase(),
-            (Self::CollectorNumberSet { collector_number: l0, set: l1 }, Self::CollectorNumberSet { collector_number: r0, set: r1 }) => l0.to_ascii_lowercase() == r0.to_ascii_lowercase() && l1.to_ascii_lowercase() == r1.to_ascii_lowercase(),
+            (Self::Name { name: l0 }, Self::Name {name: r0 }) => l0.eq_ignore_ascii_case(r0),
+            (Self::NameSet { name: l0, set: l1 }, Self::NameSet { name: r0, set: r1 }) => l0.eq_ignore_ascii_case(r0) && l1.eq_ignore_ascii_case(r1),
+            (Self::CollectorNumberSet { collector_number: l0, set: l1 }, Self::CollectorNumberSet { collector_number: r0, set: r1 }) => l0.eq_ignore_ascii_case(r0) && l1.eq_ignore_ascii_case(r1),
             _ => false,
         }
     }

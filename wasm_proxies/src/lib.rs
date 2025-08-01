@@ -3,7 +3,7 @@ extern crate alloc;
 
 mod logging;
 
-use core::{fmt::Display, arch::wasm32::unreachable};
+use core::fmt::Display;
 use alloc::{borrow::ToOwned, format, string::{String, ToString}, vec::Vec};
 use hashbrown::HashMap;
 use log::error;
@@ -15,11 +15,6 @@ use crate::logging::WasmLogger;
 
 #[global_allocator]
 static ALLOCATOR: talc::TalckWasm = unsafe { talc::TalckWasm::new_global() };
-
-#[panic_handler]
-fn panic(_panic: &core::panic::PanicInfo<'_>) -> ! {
-    unreachable()
-}
 
 const DECK_LIST_TEXTBOX_ID: &str = "deck-list";
 const OLD_DECK_LIST_TEXTBOX_ID: &str = "old-deck-list";

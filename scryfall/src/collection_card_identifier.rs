@@ -85,11 +85,11 @@ impl Serialize for CollectionCardIdentifier {
             CollectionCardIdentifier::MultiverseId { multiverse_id } => root.serialize_field("multiverse_id", multiverse_id)?,
             CollectionCardIdentifier::OracleId { oracle_id } => root.serialize_field("oracle_id", oracle_id)?,
             CollectionCardIdentifier::IllustrationId { illustration_id } => root.serialize_field("illustration_id", illustration_id)?,
-            CollectionCardIdentifier::Name { name } => root.serialize_field("name", name)?,
+            CollectionCardIdentifier::Name { name } => root.serialize_field("name", get_front_face_name(name))?,
             CollectionCardIdentifier::NameSet { name, set } => 
             {
                 root.serialize_field("set", set)?;
-                root.serialize_field("name", name)?;
+                root.serialize_field("name", get_front_face_name(name))?;
             },
             CollectionCardIdentifier::CollectorNumberSet { collector_number, set } => {
                 root.serialize_field("set", set)?;
@@ -98,5 +98,14 @@ impl Serialize for CollectionCardIdentifier {
         };
 
         root.end()
+    }
+}
+
+// This is necessary as Scryfall matches only with the front face, in the collection method only.
+fn get_front_face_name(full_name: &str) -> &str {
+    if let Some((front, _back)) = full_name.split_once(" // ") {
+        front
+    } else {
+        full_name
     }
 }

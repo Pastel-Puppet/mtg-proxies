@@ -1,9 +1,10 @@
 #[cfg(feature = "std")]
 use std::{fs::File, io::{BufReader, Read}};
 use core::error::Error;
-use alloc::{boxed::Box, string::{String, ToString}, vec::Vec};
+use alloc::{boxed::Box, string::ToString, vec::Vec};
 use hashbrown::{HashMap, HashSet};
 use log::error;
+use regex::Regex;
 use serde_json::from_str;
 
 use crate::{api_classes::{Card, Deck}, collection_card_identifier::CollectionCardIdentifier, fetch_card_list::ResolvedCard};
@@ -37,72 +38,9 @@ pub fn deck_diff(old_deck: Vec<ResolvedCard>, new_deck: Vec<ResolvedCard>) -> De
     DeckDiff { unchanged, added, removed }
 }
 
-fn parse_card_name(name: &str) -> CollectionCardIdentifier {
-    let name = name.trim();
-
-    // Check for and parse cards with [SET] or [SET#NUM] formatting.
-    match name.strip_prefix("[") {
-        Some(name_strip) => match name_strip.split_once("] ") {
-                None => CollectionCardIdentifier::Name { name: name.to_string() },
-                Some((set_identifier, name_clean)) => {
-                    match set_identifier.split_once("#") {
-                        None => CollectionCardIdentifier::NameSet { name: name_clean.to_string(), set: set_identifier.to_string() },
-                        Some((set, collector_number)) => CollectionCardIdentifier::CollectorNumberSet { collector_number: collector_number.to_string(), set: set.to_string() },
-                    }
-                },
-            },
-        None => CollectionCardIdentifier::Name { name: name.to_string() },
-    }
-}
-
-fn try_parse_line_as_mtg_arena(line: &str) -> Option<(CollectionCardIdentifier, usize)> {
-    let line = match line.strip_suffix(" *F*") {
-        Some(stripped_line) => stripped_line,
-        None => line,
-    };
-
-    let mut line_split = line.rsplit(" ");
-
-    let collector_number_string = line_split.next()?;
-    let set_identifier = line_split.next()?.strip_prefix("(")?.strip_suffix(")")?;
-    let Ok(card_count) = line_split.last()?.parse::<usize>() else {
-        return Some((CollectionCardIdentifier::CollectorNumberSet { collector_number: collector_number_string.to_string(), set: set_identifier.to_ascii_lowercase() }, 1));
-    };
-
-    Some((CollectionCardIdentifier::CollectorNumberSet { collector_number: collector_number_string.to_string(), set: set_identifier.to_ascii_lowercase() }, card_count))
-}
-
-fn parse_txt_line(line: String) -> Option<(CollectionCardIdentifier, usize)> {
-    let (count, mut text) = match line.trim().split_once(" ") {
-        None => return None,
-        Some((digits, text)) => {
-            match digits.parse() {
-                Err(_) => return None,
-                Ok(digits) => (digits, text),
-            }
-        },
-    };
-
-    text = match text.split_once(" #") {
-        None => text,
-        Some((main_text, _comment)) => main_text,
-    };
-
-    text = match text.split_once(" <") {
-        None => text,
-        Some((main_text, _overrides)) => main_text,
-    };
-
-    if let Some(identifier) = try_parse_line_as_mtg_arena(text) {
-        return Some(identifier);
-    }
-
-    Some((parse_card_name(text), count))
-}
-
 #[cfg(feature = "std")]
 pub fn parse_txt_file(file: &File) -> Result<HashMap<CollectionCardIdentifier, usize>, Box<dyn Error>> {
-    let mut deck_file = String::new();
+    let mut deck_file = alloc::string::String::new();
     let mut buffered_reader = BufReader::new(file);
     buffered_reader.read_to_string(&mut deck_file)?;
 
@@ -111,10 +49,32 @@ pub fn parse_txt_file(file: &File) -> Result<HashMap<CollectionCardIdentifier, u
 
 pub fn parse_txt_data(txt_data: &str) -> Result<HashMap<CollectionCardIdentifier, usize>, Box<dyn Error>> {
     let mut cards = HashMap::new();
+    let regex = Regex::new(r"(?Rm)^(?<count>\d+) (?:\[(?<set>\S+?)(?:#(?<collector_number>\d+))?\] )?(?<name>.+?)(?:\((?<arena_set>.+)\) (?<arena_collector_number>.+))?(?: <.*>)?(?: #.*)?$")?;
 
-    for deck_line in txt_data.lines() {
-        if let Some((card, count)) = parse_txt_line(deck_line.to_string()) {
-            cards.insert(card, count);
+    for card_details in regex.captures_iter(txt_data) {
+        let count: usize = if let Some(digits) = card_details.name("count") {
+            digits.as_str().parse()?
+        } else {
+            error!("RegEx matched but no capturing group called 'count' present");
+            continue;
+        };
+
+        let Some(name) = card_details.name("name").map(|matched_str| matched_str.as_str().to_string()) else {
+            error!("RegEx matched but no capturing group called 'name' present");
+            continue;
+        };
+
+        let set = card_details.name("set").or_else(|| card_details.name("arena_set")).or_else(|| None).map(|matched_str| matched_str.as_str().to_string());
+        let collector_number = card_details.name("collector_number").or_else(|| card_details.name("arena_collector_number")).or_else(|| None).map(|matched_str| matched_str.as_str().to_string());
+
+        if let Some(set) = set {
+            if let Some(collector_number) = collector_number {
+                cards.insert(CollectionCardIdentifier::CollectorNumberSet { collector_number, set }, count);
+            } else {
+                cards.insert(CollectionCardIdentifier::NameSet { name, set }, count);
+            }
+        } else {
+            cards.insert(CollectionCardIdentifier::Name { name }, count);
         }
     }
 
@@ -186,4 +146,64 @@ pub fn images_from_json_file(file: &File, exclude_basic_lands: bool) -> Result<V
     }
 
     Ok(image_list)
+}
+
+#[cfg(test)]
+mod tests {
+    use log::LevelFilter;
+    use super::*;
+
+    extern crate test;
+    use test::Bencher;
+
+    #[test]
+    fn test_parsing() {
+        let mut logging_builder = colog::default_builder();
+        logging_builder.filter(None, LevelFilter::Info);
+        logging_builder.init();
+
+        let test_cards = "\
+Main
+1 [LCI] Anim Pakal, Thousandth Moon
+12 Needleverge Pathway // Pillarverge Pathway
+//Main
+1 [LCI#223] Anim Pakal, Thousandth Moon <cost={WU}{U}> #test comment
+1 Lae'zel, Vlaakith's Champion (CLB) 29
+1 Wake the Reflections (PLST) MM3-28
+1 Toby, Beastie Befriender (PDSK) 35p
+";
+
+        let ground_truth: HashMap<CollectionCardIdentifier, usize> = HashMap::from_iter([
+            (CollectionCardIdentifier::NameSet { name: "Anim Pakal, Thousandth Moon".to_string(), set: "LCI".to_string() }, 1),
+            (CollectionCardIdentifier::Name { name: "Needleverge Pathway // Pillarverge Pathway".to_string() }, 12),
+            (CollectionCardIdentifier::CollectorNumberSet { collector_number: "223".to_string(), set: "LCI".to_string() }, 1),
+            (CollectionCardIdentifier::CollectorNumberSet { collector_number: "29".to_string(), set: "CLB".to_string() }, 1),
+            (CollectionCardIdentifier::CollectorNumberSet { collector_number: "MM3-28".to_string(), set: "PLST".to_string() }, 1),
+            (CollectionCardIdentifier::CollectorNumberSet { collector_number: "35p".to_string(), set: "PDSK".to_string() }, 1),
+        ].into_iter());
+
+        let test_card_map = parse_txt_data(test_cards).expect("Parsing of test card data failed");
+
+        assert_eq!(test_card_map.len(), ground_truth.len());
+
+        for (card, count) in ground_truth {
+            assert_eq!(*test_card_map.get(&card).unwrap_or_else(|| panic!("Parsed card data should contain {}\nParsed card data: {:?}", card, test_card_map)), count);
+        }
+    }
+
+    #[bench]
+    fn benchmark_parsing_regex(b: &mut Bencher) {
+        let test_cards = "\
+Main
+1 [LCI] Anim Pakal, Thousandth Moon
+12 Needleverge Pathway // Pillarverge Pathway
+//Main
+1 [LCI#223] Anim Pakal, Thousandth Moon <cost={WU}{U}> #test comment
+1 Lae'zel, Vlaakith's Champion (CLB) 29
+1 Wake the Reflections (PLST) MM3-28
+1 Toby, Beastie Befriender (PDSK) 35p
+";
+
+        b.iter(|| parse_txt_data(test_cards).expect("Parsing of test card data failed"));
+    }
 }

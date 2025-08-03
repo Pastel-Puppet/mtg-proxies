@@ -5,7 +5,7 @@ pub mod reqwest_wrapper;
 #[cfg(feature = "wasm")]
 pub mod wasm_fetch_wrapper;
 
-use core::{error::Error as ErrorTrait, fmt::Display};
+use core::{error::Error as ErrorTrait, fmt::Display, future::Future};
 use alloc::{borrow::ToOwned, boxed::Box, format, string::String, vec::Vec};
 use log::{info, warn};
 use serde_json::{from_str, json, Value};
@@ -17,9 +17,9 @@ pub trait RequestClient {
     fn build() -> Result<Self, Box<dyn ErrorTrait>>
         where Self: Sized;
 
-    fn get(&self, url: String) -> impl core::future::Future<Output = Result<String, Box<dyn ErrorTrait>>>;
-    fn get_with_parameters(&self, url: String, query_parameters: &[(&str, &str)]) -> impl core::future::Future<Output = Result<String, Box<dyn ErrorTrait>>>;
-    fn post(&self, url: String, payload: &Value) -> impl core::future::Future<Output = Result<String, Box<dyn ErrorTrait>>>;
+    fn get(&self, url: String) -> impl Future<Output = Result<String, Box<dyn ErrorTrait>>>;
+    fn get_with_parameters(&self, url: String, query_parameters: &[(&str, &str)]) -> impl Future<Output = Result<String, Box<dyn ErrorTrait>>>;
+    fn post(&self, url: String, payload: &Value) -> impl Future<Output = Result<String, Box<dyn ErrorTrait>>>;
 }
 
 #[derive(Debug, Clone)]
@@ -65,7 +65,6 @@ static SPECIFIED_CARD_METHOD: &str = "cards";
 static MULTIVERSE_CARD_METHOD: &str = "cards/multiverse";
 static MTGO_CARD_METHOD: &str = "cards/mtgo";
 static CARD_COLLECTION_METHOD: &str = "cards/collection";
-static BULK_DATA_METHOD: &str = "bulk-data/all-cards";
 
 pub struct ApiInterface<Client>
     where Client: RequestClient {
@@ -116,7 +115,7 @@ impl<Client> ApiInterface<Client>
         }
     }
 
-    pub async fn get_cards_from_list(&self, identifiers: &[&CollectionCardIdentifier]) -> Result<ApiObject, Box<dyn ErrorTrait>> {
+    pub async fn get_cards_from_list(&self, identifiers: &[CollectionCardIdentifier]) -> Result<ApiObject, Box<dyn ErrorTrait>> {
         let identifiers_json = json!({
             "identifiers": identifiers
         });
@@ -179,30 +178,5 @@ impl<Client> ApiInterface<Client>
         }
 
         Ok(card_printings)
-    }
-
-    async fn get_bulk_data_endpoint(&self) -> Result<ApiObject, Box<dyn ErrorTrait>> {
-        info!("Sending API request for bulk data endpoints");
-
-        let response = self.http_client.get(format!("{}/{}", self.api_endpoint, BULK_DATA_METHOD)).await?;
-
-        let api_object = from_str(&response)?;
-        if let ApiObject::Error(error) = api_object {
-            Err(Box::new(ApiError { error: *error }))
-        } else {
-            Ok(api_object)
-        }
-    }
-
-    pub async fn get_bulk_data(&self) -> Result<String, Box<dyn ErrorTrait>> {
-        let received_object = self.get_bulk_data_endpoint().await?;
-        let ApiObject::BulkData(bulk_data_endpoint) = received_object else {
-            return Err(Box::new(InvalidApiObjectError { expected: "BulkData",  received: received_object }));
-        };
-
-        info!("Sending API request for bulk data");
-        let response = self.http_client.get(bulk_data_endpoint.download_uri).await?;
-
-        Ok(response)
     }
 }

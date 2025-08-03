@@ -10,7 +10,7 @@ use log::error;
 use wasm_bindgen::prelude::*;
 use web_sys::{js_sys::{Array, Function, JsString}, window, Document, HtmlDivElement, HtmlImageElement, HtmlInputElement, HtmlTextAreaElement};
 
-use scryfall::{api_interface::{api_classes::Card, ApiInterface, collection_card_identifier::CollectionCardIdentifier, wasm_fetch_wrapper::WasmFetchWrapper}, card_images_helper::{extract_images, ImageUriType}, deck_formats::{deck_diff, parse_json_data, parse_txt_data_js}, fetch_card_list::resolve_cards};
+use scryfall::{api_interface::{api_classes::Card, collection_card_identifier::CollectionCardIdentifier, wasm_fetch_wrapper::WasmFetchWrapper, ApiInterface}, card_images_helper::{extract_images, ImageUriType}, deck_diff::deck_diff, deck_parsers::{parse_json_data, parse_txt_data_js}, fetch_card_data::fetch_deck::FetchDeck};
 use crate::logging::WasmLogger;
 
 #[global_allocator]
@@ -145,11 +145,11 @@ async fn add_proxy_images_from_deck_list(user_options: UserOptions, document: &D
     let interface = ApiInterface::<WasmFetchWrapper>::new()
         .map_err(rust_error_to_js)?;
 
-    let deck_cards = resolve_cards(&user_options.deck_list, user_options.include_tokens, &interface).await
+    let deck_cards = interface.fetch_deck(&user_options.deck_list, user_options.include_tokens).await
         .map_err(rust_error_to_js)?;
 
     let mut cards_to_display = if let Some(old_deck) = user_options.old_deck {
-        let old_deck_cards = resolve_cards(&old_deck, user_options.include_tokens, &interface).await
+        let old_deck_cards = interface.fetch_deck(&old_deck, user_options.include_tokens).await
             .map_err(rust_error_to_js)?;
 
         deck_diff(old_deck_cards, deck_cards).added

@@ -19,7 +19,6 @@ pub enum ApiObject {
     Deck(Box<Deck>),
     DeckEntry(Box<DeckEntry>),
     CardDigest(Box<CardDigest>),
-    BulkData(Box<BulkData>),
 }
 
 impl Display for ApiObject {
@@ -33,7 +32,6 @@ impl Display for ApiObject {
             ApiObject::Deck(deck) => "Deck(".to_owned() + &deck.to_string() + ")",
             ApiObject::DeckEntry(deck_entry) => "DeckEntry(".to_owned() + &deck_entry.to_string() + ")",
             ApiObject::CardDigest(card_digest) => "CardDigest(".to_owned() + &card_digest.to_string() + ")",
-            ApiObject::BulkData(bulk_data) => "BulkData(".to_owned() + &bulk_data.to_string() + ")",
         };
 
         write!(f, "{text}")
@@ -444,27 +442,4 @@ pub struct DeckImageUris {
     pub front: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub back: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename = "bulk_data")]
-pub struct BulkData {
-    pub id: Uuid,
-    #[serde(rename = "type")]
-    pub bulk_type: String,
-    pub updated_at: String,
-    pub uri: String,
-    pub name: String,
-    pub description: String,
-    pub size: usize,
-    pub download_uri: String,
-    pub content_type: String,
-    pub content_encoding: String,
-}
-
-impl Display for BulkData {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let text = &self.name;
-        write!(f, "{text}")
-    }
 }

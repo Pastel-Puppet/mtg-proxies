@@ -3,7 +3,8 @@
 extern crate alloc;
 
 pub mod api_interface;
-pub mod fetch_card_list;
-pub mod deck_formats;
+pub mod deck_diff;
+pub mod deck_parsers;
 pub mod card_images_helper;
 pub mod token_handling;
+pub mod fetch_card_data;

@@ -1,9 +1,9 @@
-use std::{error::Error, io::Write};
+use std::{error::Error, io::{Read, Write}};
 use clap::{Parser, ValueEnum};
 use clio::{Input, OutputPath};
 use log::LevelFilter;
 
-use scryfall::{api_interface::{ApiInterface, reqwest_wrapper::ReqwestWrapper}, card_images_helper::{extract_images, ImageUriType}, deck_formats::{deck_diff, parse_json_file, parse_txt_file}, fetch_card_list::{resolve_cards, ResolvedCard}};
+use scryfall::{api_interface::{reqwest_wrapper::ReqwestWrapper, ApiInterface}, card_images_helper::{extract_images, ImageUriType}, deck_diff::deck_diff, deck_parsers::{parse_json_data, parse_txt_data}, fetch_card_data::{fetch_deck::FetchDeck, ResolvedCard}};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum ImageType {
@@ -66,19 +66,20 @@ async fn get_cards_from_file(deck_file: &mut Input, interface: &mut ApiInterface
         None => panic!("Could not find extension of file {}", deck_file.path()),
     };
 
-    let deck_file = deck_file.get_file().expect("Could not open deck file");
+    let mut deck_data = String::new();
+    deck_file.read_to_string(&mut deck_data).expect("Could not open deck file");
 
     let unresolved_cards = match deck_file_extension.as_str() {
         "txt" | "dec" => {
-            parse_txt_file(deck_file).expect("Could not parse deck file")
+            parse_txt_data(&deck_data).expect("Could not parse deck file")
         },
         "json" => {
-            parse_json_file(deck_file).expect("Could not parse deck file")
+            parse_json_data(&deck_data).expect("Could not parse deck file")
         },
         _ => panic!("File extension {deck_file_extension} is not supported"),
     };
 
-    resolve_cards(&unresolved_cards, include_tokens, interface).await.expect("Could not resolve deck cards")
+    interface.fetch_deck(&unresolved_cards, include_tokens).await.expect("Could not resolve deck cards")
 }
 
 #[tokio::main]

@@ -17,7 +17,7 @@ use crate::api_interface::{api_classes::Deck, collection_card_identifier::Collec
 #[cfg(feature = "std")]
 pub fn parse_txt_data(txt_data: &str) -> Result<HashMap<CollectionCardIdentifier, usize>, Box<dyn Error>> {
     let mut cards = HashMap::new();
-    let regex = Regex::new(r"(?Rm)^(?<count>\d+) (?:\[(?<set>\S+?)(?:#(?<collector_number>\d+))?\] )?(?<name>.+?)(?:\((?<arena_set>.+)\) (?<arena_collector_number>.+))?(?: <.*>)?(?: #.*)?$")?;
+    let regex = Regex::new(r"(?Rm)^(?<count>\d+) (?:\[(?<set>\S+?)(?:#(?<collector_number>\d+))?\] )?(?<name>.+?)(?:\((?<arena_set>.+)\) (?<arena_collector_number>\S+))?(?: \*F\*)?(?: <.*>)?(?: #.*)?$")?;
 
     for card_details in regex.captures_iter(txt_data) {
         let count: usize = if let Some(digits) = card_details.name("count") {
@@ -52,7 +52,7 @@ pub fn parse_txt_data(txt_data: &str) -> Result<HashMap<CollectionCardIdentifier
 #[cfg(feature = "wasm")]
 pub fn parse_txt_data_js(txt_data: &str) -> Result<HashMap<CollectionCardIdentifier, usize>, JsValue> {
     let mut cards = HashMap::new();
-    let regex = RegExp::new(r"^(?<count>\d+) (?:\[(?<set>\S+?)(?:#(?<collector_number>\d+))?\] )?(?<name>.+?)(?:\((?<arena_set>.+)\) (?<arena_collector_number>.+))?(?: <.*>)?(?: #.*)?$", "gum");
+    let regex = RegExp::new(r"^(?<count>\d+) (?:\[(?<set>\S+?)(?:#(?<collector_number>\d+))?\] )?(?<name>.+?)(?:\((?<arena_set>.+)\) (?<arena_collector_number>\S+))?(?: \*F\*)?(?: <.*>)?(?: #.*)?$", "gum");
 
     for matched_line in JsString::from(txt_data).match_all(&regex) {
         let Ok(Ok(matches_array)) = matched_line.map(|array| array.dyn_into::<Array>()) else {
